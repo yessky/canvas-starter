@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-13 - ctx.transform 矩阵变换</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.transform(m11, m12, m21, m22, dx, dy) 矩阵变换
+
+    m11 m21 dx
+    m12 m22 dy
+    0   0   1
+
+    以上矩阵可转化为在单位圆内旋转a度并平移dx dy
+
+    cosa -sina dx
+    sina cosa  dy
+    0    0     1
+
+    其中m11/m22分别对应单位圆x/y轴，由以上变换矩阵可知:
+
+    1. 缩放（缩放单位x/y轴坐标即可实现缩放变换）
+      sx 0  0
+      0  sy 0
+      0  0  1
+
+    2. 平移
+      1 0 dx
+      0 1 dy
+      0 0 1
+
+    3. 旋转
+      cosa -sina 0
+      sina cosa  0
+      0    0     1
+
+    4. 倾斜（x轴方向的倾斜即为单位y轴与单位x轴夹角逐渐减小，y轴方向同理可得）
+      1       tana1 0
+      tana2   1     0
+      0       0     1
+
+    结论:
+
+    1. transform的效果可以叠加，setTransform则可以用来将画布归回原位后再进行相应的效果处理
+    2. transform如果既有平移又有旋转, 则先平移后旋转
+  </pre>
+  <p></p>
+  <canvas id="stage" width="800" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+  var deg = Math.PI / 6;
+  var cosa = Math.cos(deg);
+  var sina = Math.sin(deg);
+  var tana = Math.tan(deg);
+
+  // 绘制九宫格辅助线
+  ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
+  ctx.moveTo(263.5, 0);
+  ctx.lineTo(263.5, 399.5);
+  ctx.moveTo(526.5, 0);
+  ctx.lineTo(526.5, 399.5);
+  ctx.moveTo(0, 133.5);
+  ctx.lineTo(799.5, 133.5);
+  ctx.moveTo(0, 266.5);
+  ctx.lineTo(799.5, 266.5);
+  ctx.stroke();
+
+  // #1 tranlate
+  ctx.save();
+  ctx.transform(1, 0, 0, 1, 50, 30);
+  ctx.beginPath();
+  ctx.rect(0, 0, 60, 70);
+  ctx.stroke();
+
+  // #2 rotate
+  ctx.restore();
+  ctx.save();
+  ctx.transform(cosa, sina, -sina, cosa, 0, 0);
+  var p1 = transform([340, 30], deg);
+  ctx.beginPath();
+  ctx.rect(p1[0], p1[1], 60, 70);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(800, 0);
+  ctx.stroke();
+
+  // #3 scale
+  ctx.restore();
+  ctx.save();
+  ctx.transform(1.25, 0, 0, 1.25, 0, 0);
+  ctx.beginPath();
+  ctx.rect(600 / 1.25, 30 / 1.25, 60, 70);
+  ctx.stroke();
+
+  // #4 skewX
+  ctx.restore();
+  ctx.save();
+  ctx.transform(1, tana, 0, 1, 0, 0);
+  ctx.beginPath();
+  ctx.rect(50, 120, 60, 70);
+  ctx.stroke();
+
+  // #5 skewY
+  ctx.restore();
+  ctx.save();
+  ctx.transform(1, 0, tana, 1, 0, 0);
+  ctx.beginPath();
+  ctx.rect(200, 160, 60, 70);
+  ctx.stroke();
+
+  // #6
+  ctx.restore();
+  drawEquilateralPolygon(630, 210, 8, 50);
+
+  // 7# tranlate + rotate
+  ctx.restore();
+  ctx.save();
+  var p2 = transform([50, 300], deg, 30, 30);
+  ctx.beginPath();
+  ctx.arc(50, 300, 15, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.transform(cosa, sina, -sina, cosa, 30, 30);
+
+  ctx.moveTo(0, 0);
+  ctx.lineTo(p2[0], 0); // 平移旋转后的坐标系辅助线
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, p2[1]);
+  ctx.moveTo(p2[0], 0);
+  ctx.lineTo(p2[0], p2[1])
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(p2[0], p2[1], 5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.rect(p2[0], p2[1], 60, 70);
+  ctx.stroke();
+
+  function drawEquilateralPolygon(x, y, n, r) {
+    var deg = Math.PI * 2 / n;
+    var cos = Math.cos(deg);
+    var sin = Math.sin(deg);
+    ctx.save();
+    ctx.transform(1, 0, 0, 1, x, y);
+    ctx.moveTo(r, 0);
+    ctx.beginPath();
+    for (var i = 0; i < n; ++i) {
+      // ctx.rotate(deg);
+      ctx.transform(cos, sin, -sin, cos, 0, 0);
+      ctx.lineTo(r, 0);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function transform(p, deg, dx, dy) {
+    dx = dx || 0;
+    dy = dy || 0;
+    var cosa = Math.cos(deg);
+    var sina = Math.sin(deg);
+    // 数学上的直角坐标系中坐标变换矩阵是逆时针旋转deg度
+    var matrix = [
+      [cosa, -sina, dx],
+      [sina, cosa, dy],
+      [0, 0, 1]
+    ];
+    // canvas坐标系中的变化矩阵是顺时针旋转deg度
+    // 由 cos(-a) = cosa; sin(-a) = -sina 知
+    matrix[0][1] *= -1;
+    matrix[1][0] *= -1;
+    // 先平移还原到原始坐标系
+    p[0] -= dx;
+    p[1] -= dy;
+    return [
+      matrix[0][0] * p[0] + matrix[0][1] * p[1],
+      matrix[1][0] * p[0] + matrix[1][1] * p[1]
+    ];
+  }
+  </script>
+</body>
+
+</html>

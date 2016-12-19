@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-03 - ctx.drawImage*</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    1. drawImage(img, x, y) 在画布上绘制原始图片
+
+      x,y 画布上的坐标
+
+    2. drawImage(img, x, y, width, height) 在画布上绘制指定尺寸的图片（对原始图片绘根据宽高缩放）
+
+      x,y 画布上的坐标
+      width,height 图片的大小
+
+    3. drawImage(img,sx,sy,swidth,sheight,x,y,width,height) 剪切图像上的一部分内容绘制到画布上
+
+      img 规定要使用的图像、画布或视频
+      sx  图像上的 x 坐标
+      sy  图像上的 y 坐标
+      swidth  剪切的宽度
+      sheight 剪切的高度
+      x 画布上放置图像的 x 坐标位置
+      y 画布上放置图像的 y 坐标位置
+      width 绘制的图像高度（伸展或缩小图像）
+      height  绘制的图像高度（伸展或缩小图像）
+  </pre>
+  <canvas id="stage" width="400" height="600" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <div style="float: left; width: 300px; margin-left: 20px">
+    <p style="font-size: 14px; margin: 0 0 5px">点击播放视频，渲染video到canvas上</p>
+    <video id="video1" width="270" controls>
+      <source src="http://www.w3school.com.cn/example/html5/mov_bbb.mp4" type="video/mp4">
+      <source src="http://www.w3school.com.cn/example/html5/mov_bbb.ogg" type="video/ogg">
+      <source src="http://www.w3school.com.cn/example/html5/mov_bbb.webm" type="video/webm">
+    </video>
+  </div>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+  var video = document.getElementById('video1');
+
+  // drawImage
+  var img = new Image();
+  img.setAttribute('crossOrigin', 'anonymous');
+  img.onload = onImageLoad;
+  img.src = 'test.png';
+
+  function onImageLoad() {
+    console.log([img.width, img.height]);
+
+    // drawImage(image, x, y) 图片保持原始大小
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(img, 10, 10);
+    ctx.restore();
+
+    // drawImage(img, x, y, width, height) 图片大小被拉伸缩放
+    ctx.save();
+    ctx.globalAlpha = 0.65;
+    ctx.drawImage(img, 10, img.height + 20, img.width / 2, img.height / 1.5);
+    ctx.restore();
+
+    // drawImage(img, sx, sy, swidth, sheight, x, y, width, height) 对图片裁剪后拉伸或缩小裁剪区域
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(img, 0, 0, 100, 120, 10, img.height * 1.7 + 30, 50, 60);
+    ctx.restore();
+
+    // 渲染视频到canvas
+    var tick = null;
+    video.addEventListener('play', function() {
+      if (tick) {
+        clearInterval(tick);
+      }
+      tick = setInterval(function() {
+        ctx.drawImage(video, 10, img.height * 2.6);
+      }, 17);
+    }, false);
+    video.addEventListener('pause', function() {
+      clearInterval(tick);
+      tick = null;
+    }, false);
+    video.addEventListener('ended', function() {
+      clearInterval(tick);
+      tick = null;
+    }, false);
+  }
+  </script>
+</body>
+
+</html>

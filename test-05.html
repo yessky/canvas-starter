@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-05 - ctx.arc</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    圆弧arc(x, y, radius, starAngle, endAngle, anticlockwise)
+
+    x: 圆心的x坐标
+
+    y: 圆心的y坐标
+
+    straAngle: 开始角度
+
+    endAngle: 结束角度
+
+    anticlockwise: 是否逆时针（true）为逆时针，(false)为顺时针
+
+    注意: 逆时针绘制时，结束角度为顺时针的角度，因此Math.PI / 4绘制的弧线同顺时针 Math.PI * 7 / 4的长度一致
+  </pre>
+  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  ctx.moveTo(30, 200);
+  ctx.lineTo(570, 200);
+  ctx.moveTo(300, 30);
+  ctx.lineTo(300, 370);
+
+  ctx.save();
+  ctx.strokeStyle = '#333';
+  ctx.stroke();
+  ctx.font = '30px serif';
+  ctx.fillText('x', 550, 180);
+  ctx.fillText('y', 320, 50);
+  ctx.restore();
+
+  // 顺时针方向
+  ctx.save();
+  ctx.font = '14px serif';
+  ctx.fillText('顺时针方向', 400, 300);
+  ctx.beginPath();
+  ctx.arc(300, 200, 30, 0, Math.PI / 3, false);
+  ctx.strokeStyle = 'red';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'green';
+  ctx.arc(300, 200, 60, 0, Math.PI * 2 / 3, false);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'gray';
+  ctx.arc(300, 200, 90, 0, Math.PI, false);
+  ctx.stroke();
+
+  // 逆时针方向
+  ctx.fillText('逆时针方向', 160, 100);
+  ctx.beginPath();
+  ctx.strokeStyle = '#E91E63';
+  // 结束角度永远是顺时针方向计算
+  ctx.arc(300, 200, 45, 0, Math.PI * 5 / 3, true);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#9C27B0';
+  ctx.arc(300, 200, 75, 0, Math.PI * 4 / 3, true);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#00BCD4';
+  ctx.arc(300, 200, 105, 0, Math.PI, true);
+  ctx.stroke();
+
+  // 绘制一个太极图
+  ctx.beginPath();
+  ctx.arc(100, 250, 60, Math.PI / 2, Math.PI * 3 / 2);
+  ctx.closePath();
+  ctx.fillStyle = '#000';
+  ctx.strokeStyle = '#000';
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(100, 250, 60, -Math.PI / 2, Math.PI / 2);
+  ctx.closePath();
+  ctx.fillStyle = '#f4f4f4';
+  ctx.strokeStyle = '#f4f4f4';
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(100, 220, 30, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = '#f4f4f4';
+  ctx.strokeStyle = '#f4f4f4';
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(100, 280, 30, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = '#000';
+  ctx.strokeStyle = '#000';
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(100, 220, 3, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = '#000';
+  ctx.strokeStyle = '#000';
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(100, 280, 3, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = '#f4f4f4';
+  ctx.strokeStyle = '#f4f4f4';
+  ctx.fill();
+  ctx.stroke();
+  </script>
+</body>
+
+</html>

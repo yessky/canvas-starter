@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-16 - ctx.createPattern(image, type) 图像平铺</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.createPattern(image, type) 图像平铺
+
+    image: Image对象
+    type: no-repeat repeat-x repeat-y repeat
+  </pre>
+  <p></p>
+  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  loadImage('test.png', function(img) {
+    var counter = 0;
+    var types = ['no-repeat', 'repeat-x', 'repeat-y', 'repeat'];
+    setInterval(function() {
+      ctx.clearRect(0, 0, 600, 400);
+      var index = counter++ % 4;
+      var pattern = ctx.createPattern(img, types[index]);
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, 600, 400);
+    }, 2000);
+  });
+
+  function loadImage(src, cb) {
+    var img = new Image;
+    img.src = src;
+    if (img.complete) {
+      return cb(img);
+    }
+    img.onload = function() {
+      cb(img);
+    };
+  }
+  </script>
+</body>
+
+</html>

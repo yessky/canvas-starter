@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-11 - ctx.createRadialGradient径向渐变</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.createRadialGradient(xStart,yStart,radiusStart,xEnd,yEnd,radiusEnd)
+
+    xStart:发散开始圆心x坐标
+    yStart:发散开始圆心y坐标
+    radiusStart:发散开始圆的半径
+    xEnd:发散结束圆心的x坐标
+    yEnd:发散结束圆心的y坐标
+    radiusEnd:发散结束圆的半径
+
+    径向渐变较为复杂，以下通过辅助线演示各种情况下径向渐变的实际效果
+
+    1. 填充图形为两个圆心连线上找到一点p，使得直线pa与pb分别与两圆相切，则圆弧apb与填充的容器相交的区域即为最终填充效果。
+
+      1.1. 渐变图形与两个圆心半径有关
+
+      1.2. 绘制的最终效果与渐变和图形有关
+
+    2. createRadialGradient画一个正常的圆球效果，应遵循以下几点：
+
+      2.1. createRadialGradient()方法中，起始圆半径小于结束圆半径
+
+      2.2. 起始圆完全在终止圆的范围内
+
+      2.3. 终止圆在绘制区域内
+  </pre>
+  <p></p>
+  <canvas id="stage" width="800" height="800" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  // ================================
+  // 以下实例中 渐变圆1半径小于渐变圆2
+
+  // 渐变圆1和渐变圆2相交
+
+  var rg1 = ctx.createRadialGradient(80, 80, 20, 120, 120, 50);
+  rg1.addColorStop(0, 'red');
+  rg1.addColorStop(0.9, 'green');
+  rg1.addColorStop(1, 'orange');
+
+  // ctx.fillStyle = rg1;
+  ctx.rect(50, 50, 160, 160);
+  //ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.fillStyle = rg1;
+  ctx.arc(105, 105, 105, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(80, 80, 20, 0, 2 * Math.PI);
+  ctx.moveTo(170, 120);
+  ctx.arc(120, 120, 50, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // 渐变圆2包含渐变圆1
+  
+  var rg2 = ctx.createRadialGradient(330, 130, 20, 340, 120, 50);
+  rg2.addColorStop(0, 'red');
+  rg2.addColorStop(0.9, 'green');
+  rg2.addColorStop(1, 'orange');
+
+  ctx.beginPath();
+  ctx.fillStyle =  rg2;
+  ctx.rect(270, 50, 160, 160);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(330, 130, 20, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(340, 120, 50, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 渐变圆1与渐变圆2相离开
+
+  var rg3 = ctx.createRadialGradient(530, 80, 20, 590, 130, 50);
+  rg3.addColorStop(0, 'red');
+  rg3.addColorStop(0.9, 'green');
+  rg3.addColorStop(1, 'orange');
+
+  ctx.beginPath();
+  ctx.fillStyle = rg3;
+  ctx.rect(500, 50, 160, 160);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(530, 80, 20, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(590, 130, 50, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // ================================
+  // 以下实例中 渐变圆1半径大于渐变圆2
+
+  // 相交
+  var rg4 = ctx.createRadialGradient(80, 300, 50, 120, 340, 20);
+  rg4.addColorStop(0, 'red');
+  rg4.addColorStop(0.9, 'green');
+  rg4.addColorStop(1, 'orange');
+
+  ctx.beginPath();
+  ctx.fillStyle = rg4;
+  ctx.rect(50, 270, 160, 160);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(80, 300, 50, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(120, 340, 20, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 包含
+  var rg5 = ctx.createRadialGradient(350, 350, 50, 330, 340, 20);
+  rg5.addColorStop(0, 'red');
+  rg5.addColorStop(0.9, 'green');
+  rg5.addColorStop(1, 'orange');
+
+  ctx.beginPath();
+  ctx.fillStyle = rg5;
+  ctx.rect(270, 270, 160, 160);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(350, 350, 50, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(330, 340, 20, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // ================================
+  // 以下演示绘制球形
+
+  // 渐变和圆同心
+  var rg6 = ctx.createRadialGradient(100, 550, 5, 100, 550, 50);
+  rg6.addColorStop(0, 'white');
+  rg6.addColorStop(1, 'black');
+
+  ctx.beginPath();
+  ctx.fillStyle = rg6;
+  ctx.arc(100, 550, 50, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 渐变不在球心
+  var rg7 = ctx.createRadialGradient(350, 540, 5, 350, 540, 60);
+  rg7.addColorStop(0, 'white');
+  rg7.addColorStop(1, 'black');
+
+  ctx.beginPath();
+  ctx.fillStyle = rg7;
+  ctx.arc(330, 550, 50, 0, Math.PI * 2);
+  ctx.fill();
+  </script>
+</body>
+
+</html>

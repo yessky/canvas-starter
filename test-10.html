@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-10 - ctx.createLinearGradient线性渐变</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.createLinearGradient(xStart,yStart,xEnd,yEnd) 线性渐变
+
+    xstart:渐变开始点x坐标
+    ystart:渐变开始点y坐标
+    xEnd:渐变结束点x坐标
+    yEnd:渐变结束点y坐标
+
+    gradient.addColorStop(offset,color) 线性渐变颜色
+
+    offset:设定的颜色离渐变结束点的偏移量(0~1)
+    color:绘制时要使用的颜色
+  </pre>
+  <p></p>
+  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+  var fps = 1000 / 30;
+
+  var lg1 = ctx.createLinearGradient(50, 50, 50, 150);
+  lg1.addColorStop(0, 'black');
+  lg1.addColorStop(0.35, 'white');
+  lg1.addColorStop(0.7, 'green');
+  lg1.addColorStop(1, 'yellow');
+
+  // 渐变填充矩形
+  ctx.beginPath();
+  ctx.fillStyle = lg1;
+  ctx.moveTo(50, 50);
+  ctx.lineTo(150, 50);
+  ctx.lineTo(150, 150);
+  ctx.lineTo(50, 150);
+  // ctx.fillRect(50, 50, 100, 100);
+  ctx.closePath();
+  ctx.fill();
+
+  var lg2 = ctx.createLinearGradient(200, 50, 300, 150);
+  lg2.addColorStop(0, 'yellow');
+  lg2.addColorStop(0.35, 'red');
+  lg2.addColorStop(0.7, 'green');
+  lg2.addColorStop(1, '#2ea9c4');
+
+  // 渐变描边矩形
+  ctx.beginPath();
+  ctx.strokeStyle = lg2;
+  ctx.lineWidth = 5;
+  ctx.moveTo(200, 50);
+  ctx.lineTo(300, 50);
+  ctx.lineTo(300, 150);
+  ctx.lineTo(200, 150);
+  ctx.lineTo(200, 50);
+  ctx.closePath();
+  ctx.stroke();
+
+  var lg3 = ctx.createLinearGradient(400, 50, 400, 150);
+  lg3.addColorStop(0, 'red');
+  lg3.addColorStop(0.5, 'green');
+  lg3.addColorStop(1, '#2ea9c4');
+  var lg4 = ctx.createLinearGradient(400, 50, 400, 150);
+  lg4.addColorStop(0, 'black');
+  lg4.addColorStop(0.5, 'white');
+  lg4.addColorStop(1, '#2ea9c4');
+
+  // 线性简便填充/描边三角形
+  ctx.beginPath();
+  ctx.strokeStyle = lg3;
+  ctx.fillStyle = lg4;
+  ctx.moveTo(450, 50);
+  ctx.lineTo(500, 150);
+  ctx.lineTo(400, 150);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+  </script>
+</body>
+
+</html>

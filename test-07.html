@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-07 - 实例1:lineTo绘制围棋棋盘</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    实例1:lineTo绘制围棋棋盘
+
+    1. 测试1px边线模糊问题
+
+    2. 绘制围棋棋盘
+  </pre>
+  <canvas id="stage" width="600" height="1200" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.strokeStyle = '#000';
+
+  var i = 0;
+  var fix = 5.5;
+  var step = Math.floor((600 - 1) / 19);
+  var size = step * 18 + fix;
+
+  // 1px 修复版本
+  ctx.beginPath();
+  for (i = 0; i < 19; ++i) {
+    ctx.moveTo(i * step + fix, fix);
+    ctx.lineTo(i * step + fix, size);
+  }
+  for (i = 0; i < 19; ++i) {
+    ctx.moveTo(fix, i * step + fix);
+    ctx.lineTo(size, i * step + fix);
+  }
+  ctx.stroke();
+
+  // 1px 未模糊版
+  ctx.beginPath();
+  var fix2 = 5;
+  var y1 = 600;
+  var y2 = 600 + step * 18 + fix2;
+  var size2 = step * 18 + fix2;
+  for (i = 0; i < 19; ++i) {
+    ctx.moveTo(i * step + fix2, y1 + fix2);
+    ctx.lineTo(i * step + fix2, y2);
+  }
+  for (i = 0; i < 19; ++i) {
+    ctx.moveTo(fix, i * step + fix2 + y1);
+    ctx.lineTo(size2, i * step + fix2 + y1);
+  }
+  ctx.stroke();
+  </script>
+</body>
+
+</html>

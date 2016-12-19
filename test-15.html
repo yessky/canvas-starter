@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-15 - ctx.shadowOffsetX/shadowOffsetY/shadowColor/shadowBlur阴影</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.shadowOffsetX/shadowOffsetY/shadowColor/shadowBlur 阴影偏移/颜色/模糊
+
+    ctx.shadowOffsetX: 阴影的横向位移量（默认值为0）
+    ctx.shadowOffsetY: 阴影的纵向位移量（默认值为0）
+    ctx.shadowColor: 阴影的颜色
+    ctx.shadowBlur: 阴影的模糊范围（值越大越模糊）
+  </pre>
+  <p></p>
+  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  ctx.save();
+  ctx.shadowOffsetX = 10;
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.fillStyle = 'red';
+  ctx.fillRect(20, 20, 80, 80);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowOffsetY = 10;
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.fillStyle = 'red';
+  ctx.fillRect(125, 20, 80, 80);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowOffsetX = 10;
+  ctx.shadowOffsetY = 10;
+  ctx.shadowColor = 'rgba(0,0,0,.3)';
+  ctx.fillStyle = 'red';
+  ctx.fillRect(220, 20, 80, 80);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowOffsetX = 10;
+  ctx.shadowOffsetY = 10;
+  ctx.shadowColor = 'rgba(0,0,0,.3)';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = 'rgba(255,0,0,.5)';
+  ctx.fillRect(330, 20, 80, 80);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowOffsetX = -10;
+  ctx.shadowOffsetY = -10;
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = 'rgba(255,0,0,.5)';
+  ctx.beginPath();
+  ctx.arc(500, 60, 40, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  drawPoint(100, 240);
+  fillPentagram(100, 240, 50);
+  drawCoordinateSystem(100, 240);
+  strokePentagram(240, 240, 50);
+
+  function drawPoint(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawCoordinateSystem(x, y) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + 400);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 400, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function fillPentagram(x, y, r) {
+    ctx.save();
+    ctx.translate(x, y);
+    // ctx.globalCompositeOperation = 'xor';
+    ctx.shadowOffsetX = 10;
+    ctx.shadowOffsetY = 10;
+    ctx.shadowColor = 'rgba(0,0,0,.3)';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    var deg = Math.PI * 4 / 5;
+    var degx = Math.PI / 2;
+    for (var i = 0; i < 5; ++i) {
+      var dx = r * Math.cos(i * deg - degx);
+      var dy = r * Math.sin(i * deg - degx);
+      ctx.lineTo(dx, dy);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,0,0,.5)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function strokePentagram(x, y, r) {
+    ctx.save();
+    ctx.translate(x, y);
+    // ctx.globalCompositeOperation = 'xor';
+    ctx.shadowOffsetX = 10;
+    ctx.shadowOffsetY = 10;
+    ctx.shadowColor = 'rgba(0,0,0,.3)';
+    ctx.shadowBlur = 2;
+    ctx.beginPath();
+    var deg = Math.PI * 2 / 5;
+    var degx = Math.PI / 2;
+    var degr = Math.PI / 10;
+    var sr = r * Math.sin(degr) / Math.cos(degr * 2); // 此处计算请自行组图证明
+    for (var i = 0; i < 5; ++i) {
+      var dx = r * Math.cos(i * deg - degx);
+      var dy = r * Math.sin(i * deg - degx);
+      var sx = sr * Math.cos(i * deg - degx + 2 * degr);
+      var sy = sr * Math.sin(i * deg - degx + 2 * degr);
+      ctx.lineTo(dx, dy);
+      ctx.lineTo(sx, sy);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,0,0,.5)';
+    ctx.stroke();
+    ctx.restore();
+  }
+  </script>
+</body>
+
+</html>

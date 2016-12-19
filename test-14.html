@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-14 - ctx.globalCompositeOperation图形组合</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    图形组合 ctx.globalCompositeOperation=type
+
+    type：
+
+        source-over（默认值）:在原有图形上绘制新图形
+
+        destination-over:在原有图形下绘制新图形
+
+        source-in:显示原有图形和新图形的交集，新图形在上，所以颜色为新图形的颜色
+
+        destination-in:显示原有图形和新图形的交集，原有图形在上，所以颜色为原有图形的颜色
+
+        source-out:只显示新图形非交集部分
+
+        destination-out:只显示原有图形非交集部分
+
+        source-atop:显示原有图形和交集部分，新图形在上，所以交集部分的颜色为新图形的颜色
+
+        destination-atop:显示新图形和交集部分，新图形在下，所以交集部分的颜色为原有图形的颜色
+
+        lighter:原有图形和新图形都显示，交集部分做颜色叠加
+
+        xor:重叠飞部分不现实
+
+        copy:只显示新图形
+
+  </pre>
+  <p></p>
+  <canvas id="stage" width="400" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var index = 0;
+  var types = [
+    'source-over', // 新图形在上
+    'destination-over', // 原图形在上
+    'source-in', // 新图形交集部分
+    'destination-in', // 原图形交集部分
+    'source-out', // 新图形非交集部分
+    'destination-out', // 原图形非交集部分
+    'source-atop', // 显示原图形和交集部分，交集为新图形颜色且在上
+    'destination-atop', // 显示新图形和交集部分，交集为原图形颜色
+    'lighter', // 新图形和原图形都显示，交集部分颜色叠加
+    'xor', // 新图形和原图形都显示，交集部分不显示
+    'copy', // 只显示新图形
+  ];
+
+  startDraw();
+
+  function startDraw() {
+    var type = types[index++];
+    if (index === types.length) {
+      index = 0;
+    }
+
+    drawCompositeType(type);
+    setTimeout(startDraw, 2000);
+  }
+
+  function drawCompositeType(type) {
+    ctx.clearRect(0, 0, 400, 400);
+    ctx.save();
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(100, 100, 80, 80);
+
+    ctx.globalCompositeOperation = type;
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(160, 160, 40, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-09 - quadraticCurveTo/bezierCurveTo二次/三次贝塞尔曲线</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.quadraticCurveTo(qcpx,qcpy,qx,qy) 二次贝塞尔曲线
+
+    qcpx:二次样条曲线控制点x坐标
+    qcpy:二次样条曲线控制点y坐标
+    qx:二次样条曲线终点x坐标
+    qy:二次样条曲线终点y坐标
+
+    ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y) 三次贝塞尔曲线
+
+    cp1x:第一个控制点x坐标
+    cp1y:第一个控制点y坐标
+    cp2x:第二个控制点x坐标
+    cp2y:第二个控制点y坐标
+    x:终点x坐标
+    y:终点y坐标
+  </pre>
+  <div>
+    二次贝塞尔数学公式:
+    <br>
+    <img src="bezier2.jpg">
+    <br>
+    <br> 三次贝塞尔数学公式:
+    <br>
+    <img src="bezier3.jpg">
+  </div>
+  <p></p>
+  <canvas id="stage" width="800" height="600" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+  var fps = 1000 / 30;
+
+  ctx.beginPath();
+  ctx.moveTo(100, 100);
+  ctx.quadraticCurveTo(150, 60, 200, 200);
+  ctx.stroke();
+  ctx.fillText('quadraticCurveTo方法', 120, 60);
+
+  ctx.beginPath();
+  ctx.moveTo(500, 100);
+  ctx.bezierCurveTo(550, 60, 650, 220, 720, 110);
+  ctx.stroke();
+  ctx.fillText('bezierCurveTo方法', 550, 60);
+
+
+  // 下面使用二次贝塞尔曲线数学公式绘制曲线
+  var p0 = [100, 300];
+  var p1 = [200, 150];
+  var p2 = [300, 450];
+  var t = 0;
+  var lastX = p0[0];
+  var lastY = p0[1];
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(p0[0], p0[1]);
+  ctx.strokeStyle = 'red';
+  ctx.quadraticCurveTo(p1[0], p1[1], p2[0], p2[1]);
+  ctx.stroke();
+  ctx.fillText('二次贝塞尔曲线数学公式', 80, 230);
+  ctx.restore();
+
+  function getQuadraticCurveAt(t) {
+    return {
+      x: (1 - t) * (1 - t) * p0[0] + 2 * t * (1 - t) * p1[0] + t * t * p2[0],
+      y: (1 - t) * (1 - t) * p0[1] + 2 * t * (1 - t) * p1[1] + t * t * p2[1]
+    }
+  }
+
+  function getBezierCurveAt(t) {
+    return {
+      x: Math.pow(1 - t, 3) * b0[0] + 3 * b1[0] * t * Math.pow(1 - t, 2) + 3 * b2[0] * t * t * (1 - t) + b3[0] * Math.pow(t, 3),
+      y: Math.pow(1 - t, 3) * b0[1] + 3 * b1[1] * t * Math.pow(1 - t, 2) + 3 * b2[1] * t * t * (1 - t) + b3[1] * Math.pow(t, 3)
+    }
+  }
+
+  function drawQuadraticLoop(cb) {
+    if (t > 1) {
+      return cb && cb();
+    }
+    var p = getQuadraticCurveAt(t);
+    ctx.beginPath();
+    ctx.lineCap = 'round';
+    ctx.lineWith = 1;
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    t += 0.01;
+    lastX = p.x;
+    lastY = p.y;
+    setTimeout(function() {
+      drawQuadraticLoop(cb);
+    }, fps);
+  }
+
+  var b0 = [500, 400];
+  var b1 = [550, 360];
+  var b2 = [650, 520];
+  var b3 = [720, 410];
+  var bt = 0;
+  var bezierX = b0[0];
+  var bezierY = b0[1];
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.strokeStyle = 'red';
+  ctx.moveTo(bezierX, bezierY);
+  ctx.bezierCurveTo(b1[0], b1[1], b2[0], b2[1], b3[0], b3[1]);
+  ctx.fillText('三次贝塞尔曲线数学公式', 480, 230);
+  ctx.stroke();
+  ctx.restore();
+
+  function drawBezierLoop(cb) {
+    if (bt > 1) {
+      return cb && cb();
+    }
+    var p = getBezierCurveAt(bt);
+    ctx.beginPath();
+    ctx.lineCap = 'round';
+    ctx.lineWith = 1;
+    ctx.moveTo(bezierX, bezierY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    bezierX = p.x;
+    bezierY = p.y;
+    bt += 0.01;
+    setTimeout(function() {
+      drawBezierLoop(cb);
+    }, fps);
+  }
+
+  setTimeout(function() {
+    drawQuadraticLoop(drawBezierLoop);
+  }, 1000);
+  </script>
+</body>
+
+</html>

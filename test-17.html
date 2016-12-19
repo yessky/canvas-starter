@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-17 - ctx.clip() 画布裁剪</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.clip() 画布裁剪
+
+    从原始画布中裁剪出一块封闭路径的区域，当调用clip方法后所绘制的图像只会显示在该裁剪区域内的部分
+  </pre>
+  <p></p>
+  <canvas id="stage" width="800" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  loadImage('test.png', function(img) {
+    ctx.save();
+    strokeCircle(200, 200, 100);
+    ctx.clip();
+    ctx.drawImage(img, 0, 0, 400, 400);
+    ctx.restore();
+
+    ctx.save();
+    strokePentagram(600, 200, 100);
+    ctx.clip();
+    ctx.drawImage(img, 400, 0, 400, 400);
+    ctx.restore();
+  });
+
+  function strokeCircle(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.closePath();
+  }
+
+  function strokePentagram(x, y, r) {
+    ctx.beginPath();
+    var deg = Math.PI * 2 / 5;
+    var degx = Math.PI / 2;
+    var degr = Math.PI / 10;
+    var sr = r * Math.sin(degr) / Math.cos(degr * 2);
+    for (var i = 0; i < 5; ++i) {
+      var ox = x + r * Math.cos(i * deg - degx);
+      var oy = y + r * Math.sin(i * deg - degx);
+      var sx = x + sr * Math.cos(i * deg - degx + degr * 2);
+      var sy = y + sr * Math.sin(i * deg - degx + degr * 2);
+      ctx.lineTo(ox, oy);
+      ctx.lineTo(sx, sy);
+    }
+    ctx.closePath();
+  }
+
+  function loadImage(src, cb) {
+    var img = new Image;
+    img.src = src;
+    if (img.complete) {
+      return cb(img);
+    }
+    img.onload = function() {
+      cb(img);
+    };
+  }
+  </script>
+</body>
+
+</html>

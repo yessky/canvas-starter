@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-06 - ctx.beginPath/closePath</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    beginPath/closePath
+
+    1. canvas中的绘制方法（如stroke,fill），都会以“上一次beginPath”之后的所有路径为基础进行绘制。
+
+    2. closePath的意思不是结束路径，而是关闭路径，它会试图从当前路径的终点连一条路径到起点，让整个路径闭合起来。但是，这并不意味着它之后的路径就是新路径了！
+
+    3. fillRect与strokeRect这种直接画出独立区域的函数，也不会打断当前的path
+  </pre>
+  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(100.5, 20.5);
+  ctx.lineTo(200.5, 20.5);
+  ctx.stroke();
+  ctx.moveTo(100.5, 40.5);
+  ctx.lineTo(200.5, 40.5)
+  ctx.strokeStyle = '#f00';
+  ctx.stroke();
+
+  ctx.restore();
+  ctx.beginPath();
+  ctx.moveTo(100.5, 60.5);
+  ctx.lineTo(200.5, 60.5);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(100.5, 80.5);
+  ctx.lineTo(200.5, 80.5)
+  ctx.strokeStyle = '#f00';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(0,255,0,1)';
+  ctx.strokeStyle = '#000';
+  ctx.arc(120, 120, 20, 0, Math.PI * 2);
+  // ctx.fill();
+  // ctx.stroke(); // 打开以上两行对比效果
+  // ctx.beginPath(); // 打开此行对比效果
+  ctx.moveTo(110, 110);
+  ctx.lineTo(200, 200);
+  ctx.lineTo(120, 240);
+  ctx.lineTo(240, 160);
+  ctx.lineTo(110, 110);
+ 	ctx.fillStyle = 'rgba(255,0,0,1)';
+ 	ctx.strokeStyle = '#000';
+  ctx.fill();
+  ctx.stroke();
+  </script>
+</body>
+
+</html>

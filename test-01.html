@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-01 - ctx.save/ctx.restore</title>
+</head>
+
+<body>
+  <pre>
+    // ctx.save/ctx.restore方法详解
+    // ctx的状态是以stack方式保存的
+    //  - 每执行一次save则向stack保存一次状态
+    //  - 每执行一次restore方法，则画布重置为stack中的最后一次状态
+  </pre>
+  <canvas id="stage" width="170" height="170" style="border: 1px solid red"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  // ctx的状态是以stack方式保存的
+  //  - 每执行一次save则向stack保存一次状态
+  //  - 每执行一次restore方法，则画布重置为stack中的最后一次状态
+
+  ctx.fillStyle = 'red';
+  ctx.fillRect(10, 10, 150, 150);
+
+  ctx.save(); // stack = [red]
+  ctx.fillStyle = "white";
+  ctx.fillRect(30, 30, 110, 110);
+
+  ctx.save(); // stack = [red, white]
+  ctx.fillStyle = "blue";
+  ctx.fillRect(50, 50, 70, 70);
+  ctx.restore(); // stack = [red, white]
+
+  ctx.save(); // stack = [red, white, white]
+  ctx.fillRect(70, 70, 30, 30);
+  ctx.restore(); // stack = [red, white]
+
+  ctx.restore(); // stack = [red]
+  ctx.fillRect(80, 80, 10, 10);
+  </script>
+</body>
+
+</html>

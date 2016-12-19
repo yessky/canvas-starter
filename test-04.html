@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-04 - ctx.fillRect/strokeRect/clearRect</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    fillRect/strokeRect/clearRect(x, y, width, heigth)
+    填充一个实心或描边或擦出一个矩形
+  </pre>
+  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = 'blue';
+  ctx.strokeStyle = 'blue';
+  ctx.fillRect(10, 10, 100, 100); // 1
+  ctx.strokeRect(120, 10, 100, 100); // 2
+
+  ctx.fillStyle = 'yellow';
+  ctx.strokeStyle = 'red';
+  ctx.fillRect(230, 10, 100, 100); // 3 - 1
+  ctx.strokeRect(230, 10, 100, 100); // 3 - 2
+
+  ctx.strokeRect(340, 10, 100, 100); // 4 - 1 
+  ctx.fillRect(340, 10, 100, 100); // 4 - 2
+
+  ctx.fillStyle = 'rgba(255, 0, 0, .5)';
+  ctx.strokeStyle = 'rgba(255, 0, 0, .5)';
+  ctx.fillRect(10, 120, 100, 100); // 5
+  ctx.strokeRect(120, 120, 100, 100); // 6
+
+  ctx.fillStyle = 'rgb(0, 255, 0)';
+  ctx.strokeStyle = 'rgb(255, 0, 0)';
+  ctx.fillRect(230, 120, 100, 100); // 7 - 1
+  ctx.strokeRect(230, 120, 100, 100); // 7 - 2
+
+  ctx.strokeRect(340, 120, 100, 100); // 8 - 1
+  ctx.fillRect(340, 120, 100, 100); // 8 - 2
+
+  ctx.clearRect(10 + 100 / 2, 10 + 100 / 2, 110 * 3, 110);
+  </script>
+</body>
+
+</html>

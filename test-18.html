@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-18 - ctx.getImageData(x, y, w, h) 获取指定区域的颜色信息</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.getImageData(x, y, w, h) 获取指定区域的颜色信息
+
+      从指定区域获取一组原色信息，顺序是所取像素范围的从左到右，从上到下，数组的元素是（所有图形，包括图片，和绘制的图形）每个像素的rgba
+
+      如 [ImageData1,ImageData2...]
+
+    ImageData对象
+
+      R - 红色 (0-255)
+      G - 绿色 (0-255)
+      B - 蓝色 (0-255)
+      A - alpha 通道 (0-255; 0 是透明的，255 是完全可见的)
+  </pre>
+  <p></p>
+  <canvas id="stage" width="800" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  loadImage('test.png', function(img) {
+    ctx.drawImage(img, 0, 0);
+    console.log(ctx.getImageData(50, 50, 1, 1))
+  });
+
+  function loadImage(src, cb) {
+    var img = new Image;
+    img.src = src;
+    if (img.complete) {
+      return cb(img);
+    }
+    img.onload = function() {
+      cb(img);
+    };
+  }
+  </script>
+</body>
+
+</html>

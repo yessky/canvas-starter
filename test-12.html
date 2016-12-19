@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-12 - ctx.translate/ctx.scale/ctx.rotate 位移/缩放/旋转</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    ctx.translate(x,y)平移
+
+    x:坐标原点向x轴方向平移x
+    y:坐标原点向y轴方向平移y
+
+    ctx.scale(x,y)缩放
+
+    x:x坐标轴按x比例缩放
+    y:y坐标轴按y比例缩放
+
+    ctx.rotate(angle)旋转
+
+    angle:坐标轴旋转x角度（角度变化模型和画圆的模型一样）
+
+    1. 平移 缩放 旋转操作的都是坐标轴
+    2. 平移 缩放 旋转 三者的顺序不同都将画出不同的结果
+  </pre>
+  <p></p>
+  <canvas id="stage" width="800" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  // 绘制九宫格辅助线
+  ctx.strokeStyle = 'rgba(0, 0, 0, .3)';
+  ctx.moveTo(263.5, 0);
+  ctx.lineTo(263.5, 399.5);
+  ctx.moveTo(526.5, 0);
+  ctx.lineTo(526.5, 399.5);
+  ctx.moveTo(0, 133.5);
+  ctx.lineTo(799.5, 133.5);
+  ctx.moveTo(0, 266.5);
+  ctx.lineTo(799.5, 266.5);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(0, 0, 0, .3)';
+  ctx.strokeStyle = 'rgba(255, 0, 0, .5)';
+  ctx.translate(0, 0);
+  ctx.save();
+
+  // 以图形左上角顶点旋转
+  // translate -> scale -> rotate
+  ctx.beginPath();
+  ctx.rect(20, 20, 60, 80);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.translate(150, 20);
+  ctx.scale(.8, .8);
+  ctx.rotate(Math.PI / 4);
+  ctx.rect(0, 0, 60, 80);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(30, 40, 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, 2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 以图形中心点旋转
+  // translate -> scale -> rotate
+
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(20, 153, 60, 80);
+  ctx.stroke();
+
+  ctx.translate(150, 193);
+  ctx.scale(.8, .8);
+  ctx.rotate(Math.PI / 4);
+  ctx.beginPath();
+  ctx.rect(-30, -40, 60, 80);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(0, 0, 2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 测试原始坐标系和平移/旋转/缩放后的坐标系上坐标的对应关系
+
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(20, 286, 60, 80);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(150, 326, 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(120, 286, 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(150, 326);
+  ctx.stroke();
+
+  var p = transform([150, 326], Math.PI / 4);
+  ctx.beginPath();
+  ctx.scale(.8, .8);
+  ctx.rotate(Math.PI / 4);
+  ctx.rect(p[0] / .8 - 30, p[1] / .8 - 40, 60, 80);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(600, 0);
+  ctx.stroke();
+
+  function transform(p, deg) {
+    var cosa = Math.cos(deg);
+    var sina = Math.sin(deg);
+    // 数学上的直角坐标系中坐标变换矩阵是逆时针旋转deg度
+    var matrix = [
+      [cosa, -sina],
+      [sina, cosa]
+    ];
+    // canvas坐标系中的变化矩阵是顺时针旋转deg度
+    // 由 cos(-a) = cosa; sin(-a) = -sina 知
+    matrix[0][1] *= -1;
+    matrix[1][0] *= -1;
+    return [
+      p[0] * matrix[0][0] + p[1] * matrix[0][1],
+      p[0] * matrix[1][0] + p[1] * matrix[1][1]
+    ];
+  }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-07 - 实例2:lineTo绘制菊花</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    实例2:lineTo绘制菊花
+
+    原理: 将圆360度划分为24份每份15度，采用类似一笔画的方法绘制出24个夹角，最后合并路径描边填充。
+  </pre>
+  <canvas id="stage" width="600" height="600" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var n = 0;
+  var dx = 150;
+  var dy = 150;
+  var s = 100;
+  // 此处计算出一个角度作为基数，使得0-n倍此基数产生的角度落在不同象限内
+  // 分别注释以下代码，对比绘制结果
+  var dig = Math.PI + Math.PI / 12; // 195度
+  //var dig = Math.PI - Math.PI / 12; // 165度
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.strokeStyle = 'yellow';
+  ctx.arc(dx, dy, s, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(dx, dy, 5, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgb(255,0, 0)';
+  ctx.fillStyle = 'rgb(0,255,0)';
+  var points = [];
+  var labeled = {};
+  for (var i = 0; i < 24; i++) {
+    var x = Math.sin(i * dig);
+    var y = Math.cos(i * dig);
+    var x1 = dx + x * s;
+    var y1 = dy + y * s;
+    var deg = (180 / 12 + 180) * i % 360;
+    ctx.lineTo(x1, y1);
+    points.push([x1, y1]);
+    if (!labeled[deg]) {
+      labeled[deg] = 1;
+    } else {
+      labeled[deg] += 1;
+    }
+    console.log(deg);
+  }
+  ctx.closePath();
+  //ctx.fill();
+  ctx.stroke();
+
+  for (var i = 0; i < points.length; ++i) {
+    var p = points[i];
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], 5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,255,0,1)';
+    ctx.fillStyle = 'rgba(0,255,0,1)';
+    ctx.font = '16px arial';
+    ctx.fillText(i + 1, p[0], p[1]);
+    ctx.closePath();
+    ctx.stroke();
+  }
+  </script>
+</body>
+
+</html>

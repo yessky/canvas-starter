@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-02 - ctx.fill*</title>
+</head>
+
+<body>
+  <pre>
+    试用font/fillText方法绘制文字
+
+    试用drawImage方法
+
+    尝试最简单的fadeIn/Out动画实现
+
+    试用toDataURL方法导出画布为图片
+  </pre>
+  <canvas id="stage" width="200" height="200" style="border: 1px solid red"></canvas>
+  <p style="margin-top: 50px;">
+    <button id="btn" style="padding: 5px 10px; font-size: 14px; line-height: 100%; border: 1px solid #ccc; background: #f3f3f3; cursor: pointer">在新窗口查看canvas</button>
+  </p>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  // fillText
+  ctx.fillStyle = 'red';
+  ctx.font = '20px serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Hello World!', 10, 10);
+
+  // drawImage
+  var img = new Image();
+  img.setAttribute('crossOrigin', 'anonymous');
+  img.onload = function() {
+    ctx.drawImage(img, 50, 50);
+  };
+  img.src = 'test.png';
+
+  // 实现图片移动
+  var startX = 50;
+  var startO = 0.1;
+  var fadeIn = true;
+  function moveImage() {
+    if (startX < 100) {
+      if (fadeIn) {
+        startO += 0.01;
+        if (startO > 1) {
+          startO = 1;
+          fadeIn = false;
+        }
+      } else {
+        startO -= 0.01;
+        if (startO < 0.1) {
+          startO = 0.1;
+          fadeIn = true;
+        }
+      }
+      ctx.clearRect(startX, 50, 200, 150);
+      startX += 0.1;
+      ctx.globalAlpha = startO;
+      ctx.drawImage(img, startX, 50);
+      requestAnimationFrame(moveImage);
+      // setTimeout(moveImage, 17);
+    }
+  }
+  setTimeout(function() {
+    requestAnimationFrame(moveImage);
+  }, 2000);
+
+  // toDataURL将canvas位图导出到新窗口
+  document.getElementById('btn').onclick = function() {
+    window.open(canvas.toDataURL('image/png'), 'canvas', 'left=0,top=0,width=200,height=200,toolbar=0,resizable=0')
+  };
+  </script>
+</body>
+
+</html>

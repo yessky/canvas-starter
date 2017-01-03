@@ -18,6 +18,8 @@
   var ctx = canvas.getContext('2d');
 
   loadImage('test.png', function(img) {
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     ctx.save();
     strokeCircle(200, 200, 100);
     ctx.clip();

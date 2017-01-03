@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>canvas test-18 - ctx.getImageData(x, y, w, h) 获取指定区域的颜色信息</title>
+  <title>canvas test-18 - ctx.getImageData/putImageData/createImageData 像素操作</title>
 </head>
 
 <body>
@@ -10,8 +10,26 @@
     ctx.getImageData(x, y, w, h) 获取指定区域的颜色信息
 
       从指定区域获取一组原色信息，顺序是所取像素范围的从左到右，从上到下，数组的元素是（所有图形，包括图片，和绘制的图形）每个像素的rgba
-
       如 [ImageData1,ImageData2...]
+
+    ctx.putImageData(imgData, x, y, dirtyX, dirtyY, dirtyWidth, dirtyHeight) 将图像数据绘制到画布
+
+      imgData: 规定要放回画布的 ImageData 对象。
+      x: 重绘图像的起点横坐标（重绘的起点和原来的图像一致的话就会把原来的图形覆盖掉，看起来就像是原来的图像变成现在的图像一样）
+      y: 重绘图像的起点纵坐标
+      //以下可选参数，设置重绘imgData像素的矩形范围，如果缺省，默认会重绘所有的imegedata
+      dirtyX: 矩形左上角相对于imgData像素区域的x轴坐标
+      dirtyY: 矩形左上角相对于imgData像素区域的y轴坐标
+      dirtyWidth: 矩形长度
+      dirtyHeight: 矩形高度
+
+    ctx.createImageData(width,height)/ctx.createImageData(imageData) 创建图像数据
+
+      width: 图像数据宽度
+      height: 图像数据高度
+      imageData: ImageData对象
+
+      参数为ImageData对象时，则创建与指定的另一个 ImageData 对象尺寸相同的新 ImageData 对象, 但不会复制图像数据
 
     ImageData对象
 
@@ -27,9 +45,78 @@
   var ctx = canvas.getContext('2d');
 
   loadImage('test.png', function(img) {
+    console.log(img.width, img.height);
     ctx.drawImage(img, 0, 0);
-    console.log(ctx.getImageData(50, 50, 1, 1))
+    var imagedata = ctx.getImageData(0, 0, img.width, img.height);
+
+    // #1
+    for (var i = 0, l = imagedata.data.length; i < l; i += 4) {
+      imagedata.data[i] = 255 - imagedata.data[i];
+      imagedata.data[i + 1] = 255 - imagedata.data[i + 1];
+      imagedata.data[i + 2] = 255 - imagedata.data[i + 2];
+      // imagedata.data[i + 3] = 255 - imagedata.data[i + 3];
+    }
+    ctx.putImageData(imagedata, 50, img.height + 20);
+
+    // #2
+    ctx.putImageData(imagedata, img.width + 20, 0, img.width / 3, 0, img.width / 3, img.height);
+
+    // #3
+    var imgdata1 = ctx.createImageData(100, 100);
+    for (var i = 0, l = imgdata1.data.length; i < l; i += 4) {
+      imgdata1.data[i] = 255;
+      imgdata1.data[i + 1] = 0;
+      imgdata1.data[i + 2] = 0;
+      imgdata1.data[i + 3] = 120;
+    }
+    ctx.putImageData(imgdata1, img.width + 70, img.height + 20);
+
+    // #4
+    var imgdata2 = ctx.createImageData(imgdata1);
+    for (var i = 0, l = imgdata2.data.length; i < l; i += 4) {
+      imgdata2.data[i] = 0;
+      imgdata2.data[i + 1] = 255;
+      imgdata2.data[i + 2] = 0;
+      imgdata2.data[i + 3] = 40;
+    }
+    ctx.putImageData(imgdata2, 20, img.height * 2 + 40);
+
+    /*var dw = img.width * 4;
+    var dh = img.height * 4;
+    var dx = 50;
+    var dy = img.height + 20;
+    var x = dx;
+    var y = dy;
+    for (var i = 0, l = imagedata.data.length; i < l; i += 4) {
+      var dc = Uint8ToXRGBA([imagedata.data[i], imagedata.data[i + 1], imagedata.data[i + 2], imagedata.data[i + 3]]);
+      drawPoint(x, y, dc);
+      if (i % 4 == 0) {
+        x += 1;
+      }
+      x = x > dx + img.width ? dx : x;
+      if (i % dw == 0) {
+        y += 1;
+      }
+    }*/
   });
+
+  function drawPoint(x, y, color) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 1, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function Uint8ToRGBA(uint8) {
+    return 'rgba(' + uint8[0] + ',' + uint8[1] + ',' + uint8[2] + ',' + (uint8[3] / 255) + ')';
+  }
+
+  function Uint8ToXRGBA(uint8) {
+    return 'rgba(' + (255 - uint8[0]) + ',' + (255 - uint8[1]) + ',' + (255 - uint8[2]) + ',' + (uint8[3] / 255) + ')';
+  }
 
   function loadImage(src, cb) {
     var img = new Image;

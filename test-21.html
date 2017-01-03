@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-21 - canvas 小游戏</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    
+  </pre>
+  <p></p>
+  <canvas id="stage" width="320" height="480" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var objects = {};
+  var bbox = canvas.getBoundingClientRect();
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  var zindex = 1;
+  var ratio = 360 / 320;
+  var tickId = null;
+  var lastTimestamp = 0;
+  var slowestDuration = 6200;
+  var fastDuration = 5200;
+  var gameImages = null;
+
+  window.onload = function() {
+    loadImages({
+      stumb: 'images/runner/stumb.png',
+      tree: 'images/runner/tree.png',
+      background: 'images/runner/bg.png'
+    }, function(images) {
+      gameImages = images;
+      // console.log(sprites)
+      drawStumbs(images);
+      // drawRoad(sprites[2]);
+      tickId = window.requestAnimationFrame(renderAll);
+    });
+  };
+
+  function renderAll(ts) {
+    var elasped = ts - lastTimestamp;
+    lastTimestamp = ts;
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    drawBackground(gameImages.background);
+    for (var i in objects) {
+      objects[i].update(elasped);
+      objects[i].render(ctx);
+      if (objects[i].isEnded()) {
+        var au = Math.floor(zindex / 3) * 50;
+        var du = slowestDuration - au;
+        if (du < fastDuration) {
+          du += au;
+        }
+        if (du > slowestDuration) {
+          du = slowestDuration;
+        }
+        var sn = drawStumb(objects[i].sprite, objects[i].dir, 0, du);
+        objects[sn.zindex] = sn;
+        delete objects[i];
+      }
+    }
+    // dra
+    if (Object.keys(objects).length !== 0) {
+      window.requestAnimationFrame(renderAll);
+    }
+  }
+
+  // drawers
+
+  function drawBackground(background) {
+    var w = (background.width / ratio) >> 1;
+    var h = (background.height / ratio) >> 1;
+    ctx.drawImage(background, (canvasWidth - w) / 2, canvasHeight - h, w, h);
+  }
+
+  function drawStumbs(images) {
+    var stumb = images.stumb;
+    var tree = images.tree;
+    var s1 = drawStumb(tree, 1, 0, slowestDuration);
+    var s2 = drawStumb(tree, 1, 0.35, slowestDuration);
+    var s3 = drawStumb(tree, 1, 0.7, slowestDuration);
+    var s4 = drawStumb(tree, 2, 0, slowestDuration);
+    var s5 = drawStumb(tree, 2, 0.35, slowestDuration);
+    var s6 = drawStumb(tree, 2, 0.7, slowestDuration);
+    objects[s1.zindex] = s1;
+    objects[s2.zindex] = s2;
+    objects[s3.zindex] = s3;
+    objects[s4.zindex] = s4;
+    objects[s5.zindex] = s5;
+    objects[s6.zindex] = s6;
+  }
+
+  function drawStumb(stumb, dir, percent, duration) {
+    var rw = (stumb.width / ratio) >> 0;
+    var rh = (stumb.height / ratio) >> 0;
+    var scale = 0.5;
+    var scale2 = 1.6;
+    var offy1 = 130 + (dir == 1 ? 20 : 0);
+    var offx1 = 70;
+    var offx2 = -180;
+    var startpos = new Vector2(dir == 1 ? offx1 : canvasWidth - offx1, offy1 + rh * scale / 2);
+    var endpos = new Vector2(dir == 1 ? offx2 : canvasWidth - offx2, canvasHeight - rh / 2);
+    var startsize = new Vector2(rw * scale, rh * scale);
+    var endsize = new Vector2(rw * scale2, rh * scale2);
+    var subpos = endpos.sub(startpos);
+    var subsize = endsize.sub(startsize);
+    duration = duration || slowestDuration;
+    return new Stumb(
+      stumb,
+      dir,
+      duration * (1 - percent),
+      startpos.add(subpos.multiply(percent)),
+      endpos,
+      startsize.add(subsize.multiply(percent)),
+      endsize
+    );
+  }
+
+  // ====================================================================================
+  // Objects
+
+  function Stumb(sprite, dir, duration, startpos, endpos, startsize, endsize) {
+    this.sprite = sprite;
+    this.duration = duration;
+    this.elasped = 0;
+    this.dir = dir;
+    this.zindex = zindex++;
+    this.pos = startpos;
+    this.size = startsize;
+    this.startpos = startpos;
+    this.endpos = endpos;
+    this.startsize = startsize;
+    this.endsize = endsize;
+    this.addpos = endpos.sub(startpos);
+    this.addsize = endsize.sub(startsize);
+  }
+
+  Stumb.prototype.update = function(ts) {
+    var percent = (this.elasped + ts) / this.duration;
+    var apos = this.addpos.multiply(percent);
+    var asize = this.addsize.multiply(percent);
+    this.elasped += ts;
+    this.pos = this.startpos.add(apos);
+    this.size = this.startsize.add(asize);
+  };
+
+  Stumb.prototype.render = function(ctx) {
+    var pos = this.pos;
+    var size = this.size;
+    var x = pos.x;
+    var y = pos.y;
+    var w = size.x;
+    var h = size.y;
+    ctx.drawImage(this.sprite, x - w / 2, y - h / 2, w, h);
+  };
+
+  Stumb.prototype.isEnded = function() {
+    return this.elasped > this.duration;
+  };
+
+  // Vector2
+
+  function Vector2(x, y) {
+    this.x = x || 0;
+    this.y = y || 0;
+  }
+  Vector2.prototype = {
+    constructor: Vector2,
+    set: function(x, y) {
+      this.x = x || 0;
+      this.y = y || 0;
+    },
+    distance: function(v) {
+      var dx = v.x - this.x;
+      var dy = v.y - this.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    },
+    dot: function(v) {
+      return this.x * v.x + this.y * v.y;
+    },
+    modulus: function() {
+      return Math.sqrt(this.x * this.x + this.y * this.y);
+    },
+    add: function(v) {
+      return new Vector2(this.x + v.x, this.y + v.y);
+    },
+    sub: function(v) {
+      return new Vector2(this.x - v.x, this.y - v.y);
+    },
+    multiply: function(m) {
+      return new Vector2(this.x * m, this.y * m);
+    },
+    unitfy: function() {
+      var l = this.modulus();
+      return new Vector2(this.x / l, this.y / l);
+    }
+  };
+  Vector2.sub = function(a, b) {
+    if (a instanceof Vector2 && b instanceof Vector2) {
+      return a.sub(b);
+    }
+    return new Vector2(a.x - b.x, a.y - b.y);
+  };
+
+  // helpers
+
+  function rnd(min, max) {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  function bind(elem, type, listener) {
+    elem.addEventListener(type, listener, false);
+    return {
+      remove: function() {
+        elem.removeEventListener(type, listener, false);
+      }
+    };
+  }
+
+  function getPointer(x, y) {
+    var xr = canvasWidth / bbox.width;
+    var yr = canvasHeight / bbox.height;
+    return {
+      x: (x - bbox.left) * xr,
+      y: (y - bbox.top) * yr
+    };
+  }
+
+  function loadImages(images, cb) {
+    function load(src, cb) {
+      var img = new Image;
+      img.src = src;
+      if (img.complete) {
+        return cb(img);
+      }
+      img.onload = function() {
+        cb(img);
+      };
+    }
+    var result = {};
+    var names = Object.keys(images);
+    var total = names.length;
+    var loaded = 0;
+    names.forEach(function(name) {
+      load(images[name], function(data) {
+        result[name] = data;
+        loaded += 1;
+        if (loaded === total) {
+          cb(result);
+        }
+      });
+    });
+  }
+  </script>
+</body>
+
+</html>

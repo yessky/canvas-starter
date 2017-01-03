@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-19 - canvas事件</title>
+</head>
+
+<body>
+  <pre style="font-size: 14px">
+    canvas事件实现思路
+
+      通过canvas代理各种鼠标事件，基于坐标判断拖动的对象，并重绘
+
+    如何确定点击的对象
+
+      1. 每个对象实现方法判断当前指针坐标是否落入对象内
+      2. 重绘时，调用ctx.isPointInPath方法判断那个对象被选中
+  </pre>
+  <p></p>
+  <canvas id="stage" width="400" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var objects = [];
+  var bbox = canvas.getBoundingClientRect();
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  objects.push(new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 40, 'rgb(0,255,0)', 'rgb(255,0,0)'));
+  objects.push(new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgb(255,0,0)'));
+  window.onload = function() {
+    renderAll();
+  };
+
+  function renderAll() {
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    for (var i = 0, l = objects.length; i < l; ++i) {
+      objects[i].draw(ctx);
+    }
+  }
+
+  // handlers
+
+  var startX = 0;
+  var startY = 0;
+  var activeObject = null;
+  var startHandler = null;
+  var moveHandler = null;
+  var endHandler = null;
+ 
+  startHandler = bind(canvas, 'mousedown', onDragStart);
+
+  function onDragStart(e) {
+    var object = findActiveObject(e);
+    var shouldRender = false;
+    if (activeObject && activeObject !== object) {
+      activeObject.setSelected(false);
+      shouldRender = true;
+    }
+
+    activeObject = object;
+
+    if (activeObject) {
+      startX = e.pageX;
+      startY = e.pageY;
+      activeObject.ox = activeObject.x;
+      activeObject.oy = activeObject.y;
+      activeObject.setSelected(true);
+      moveHandler = bind(canvas, 'mousemove', onDragMove);
+      endHandler = bind(canvas, 'mouseup', onDragEnd);
+    }
+
+    if (shouldRender || activeObject) {
+      renderAll();
+    }
+  }
+
+  function onDragMove(e) {
+    var dx = e.pageX - startX;
+    var dy = e.pageY - startY;
+    activeObject.x = activeObject.ox + dx;
+    activeObject.y = activeObject.oy + dy;
+    renderAll();
+  }
+
+  function onDragEnd() {
+    moveHandler.remove();
+    endHandler.remove();
+    if (activeObject) {
+      activeObject.setSelected(false);
+      activeObject = null;
+      renderAll();
+    }
+  }
+
+  function findActiveObject(e) {
+    var p = getPointer(e.pageX, e.pageY);
+    for (var i = objects.length - 1; i > -1; --i) {
+      if (objects[i].containsPoint(p.x, p.y)) {
+        return objects[i];
+      }
+    }
+  }
+
+  // helpers
+
+  function rnd(min, max) {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  function bind(elem, type, listener) {
+    elem.addEventListener(type, listener, false);
+    return {
+      remove: function() {
+        elem.removeEventListener(type, listener, false);
+      }
+    };
+  }
+
+  function getPointer(x, y) {
+    var xr = canvasWidth / bbox.width;
+    var yr = canvasHeight / bbox.height;
+    return {
+      x: (x - bbox.left) * xr,
+      y: (y - bbox.top) * yr
+    };
+  }
+
+  function KCircle(x, y, r, fillStyle, selectedStyle) {
+    this.x = x;
+    this.y = y;
+    this.ox = x;
+    this.oy = y;
+    this.raidus = r;
+    this.fillStyle = fillStyle;
+    this.selectedStyle = selectedStyle;
+    this.selectd = false;
+  }
+
+  KCircle.prototype.type = 'circle';
+
+  KCircle.prototype.setSelected = function(selected) {
+    if (!this.fillStyle_) {
+      this.fillStyle_ = this.fillStyle;
+    }
+    if (selected) {
+      this.fillStyle = this.selectedStyle;
+    } else {
+      this.fillStyle = this.fillStyle_;
+    }
+    return this;
+  };
+
+  KCircle.prototype.draw = function(ctx) {
+    ctx.save();
+    ctx.fillStyle = this.fillStyle;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.raidus, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+
+  KCircle.prototype.containsPoint = function(x, y) {
+    return Math.sqrt((this.x - x) * (this.x - x) + (this.y - y) * (this.y - y)) < this.raidus;
+  };
+
+  function KRect(x, y, width, height, fillStyle, selectedStyle) {
+    this.x = x;
+    this.y = y;
+    this.ox = x;
+    this.oy = y;
+    this.width = width;
+    this.height = height;
+    this.fillStyle = fillStyle;
+    this.selectedStyle = selectedStyle;
+    this.selectd = false;
+  }
+
+  KRect.prototype.type = 'rect';
+
+  KRect.prototype.setSelected = function(selected) {
+    if (!this.fillStyle_) {
+      this.fillStyle_ = this.fillStyle;
+    }
+    if (selected) {
+      this.fillStyle = this.selectedStyle;
+    } else {
+      this.fillStyle = this.fillStyle_;
+    }
+    return this;
+  };
+
+  KRect.prototype.draw = function(ctx) {
+    ctx.save();
+    ctx.fillStyle = this.fillStyle;
+    ctx.beginPath();
+    ctx.rect(this.x, this.y, this.width, this.height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+
+  KRect.prototype.containsPoint = function(x, y) {
+    return x >= this.x && y >= this.y && x <= (this.x + this.width) && y <= (this.y + this.height);
+  };
+
+  function KText(text, x, y, font, color) {
+    this.text = text;
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.font = font || '14px Arial';
+  }
+
+  KText.prototype.setText = function(text) {
+    this.text = text;
+    return this;
+  };
+
+  KText.prototype.draw = function(ctx) {
+    ctx.save();
+    ctx.font = this.font;
+    ctx.fillStyle = this.color;
+    var geom = ctx.measureText(this.text);
+    ctx.fillText(this.text, this.x - geom.width / 2, this.y - geom.height / 2);
+    ctx.restore();
+  };
+  </script>
+</body>
+
+</html>

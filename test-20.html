@@ -36,10 +36,13 @@
   var canvasWidth = canvas.width;
   var canvasHeight = canvas.height;
   var zindex = 1;
-  var circle = new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 40, 'rgb(0,255,0)', 'rgba(255,0,0,.5)');
-  var rect = new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
-  objects[circle.zindex] = circle;
-  objects[rect.zindex] = rect;
+  var intersectionPoint = null;
+  // var circle = new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 40, 'rgb(0,255,0)', 'rgba(255,0,0,.5)');
+  var rect1 = new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
+  var rect2 = new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
+  // objects[circle.zindex] = circle;
+  objects[rect1.zindex] = rect1;
+  objects[rect2.zindex] = rect2;
 
   window.onload = function() {
     renderAll();
@@ -49,6 +52,16 @@
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
     for (var i in objects) {
       objects[i].draw(ctx);
+    }
+    if (intersectionPoint) {
+    	ctx.beginPath();
+      ctx.save();
+      ctx.arc(intersectionPoint[0], intersectionPoint[1], 5, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = '#000';
+      ctx.fill();
+      ctx.restore();
+      intersectionPoint = null;
     }
   }
 
@@ -96,7 +109,7 @@
     activeObject.x = activeObject.ox + dx;
     activeObject.y = activeObject.oy + dy;
     canvas.style.cursor = 'move';
-    rayHitTest(activeObject, dy / (dx + 0.0000001), activeObject.x, activeObject.y);
+    rayHitTest(activeObject, dy / dx, activeObject.x, activeObject.y);
     renderAll();
   }
 
@@ -133,19 +146,32 @@
   function rayHitTest(obj, k1, x, y) {
     var b1 = y - k1 * x;
     var bounds1 = obj.getBounds();
-    // for (var i in objects) {
-    //   var cur = objects[i];
-    //   if (cur !== obj) {
-    //     // var bounds2 = cur.getBounds();
-    //     // var k2 = 0;
-    //     // var b2 = bounds2.top - k2 * bounds2.left;
-    //     // var kx = (b2 - b1) / (k1 - k2);
-    //     // var ky = (k1 * b2 - k2 * b1) / (k1 - k2);
-    //     // if (kx >= bounds2.left && kx <= bounds2.right && ky >= bounds2.top && ky <= bounds2.bottom) {
-    //     //   console.log(obj.zindex + ' hit ' + cur.zindex);
-    //     // }
-    //   }
-    // }
+    if (k1 === Infinity || k1 === -Infinity) {
+    	return;
+    }
+    for (var key in objects) {
+      var cur = objects[key];
+      if (cur !== obj) {
+        var bounds2 = cur.getBounds();
+        var k2 = 0;
+        var b2 = bounds2.top - k2 * bounds2.left;
+        var kx = (b2 - b1) / (k1 - k2);
+        // var ky1 = (k1 * b2 - k2 * b1) / (k1 - k2);
+        var ky = k1 * kx + b1;
+        if (!isNaN(kx) && !isNaN(ky)) {
+          intersectionPoint = [kx, ky];
+          if (
+            kx >= bounds2.left && kx <= bounds2.right &&
+            (
+              (bounds1.bottom >= bounds2.top && bounds1.bottom <= bounds2.bottom) ||
+              (bounds1.top >= bounds2.top && bounds1.top <= bounds2.bottom)
+            )
+          ) {
+            console.log(obj.zindex + ' hit ' + cur.zindex);
+          }
+        }
+      }
+    }
   }
 
   // helpers

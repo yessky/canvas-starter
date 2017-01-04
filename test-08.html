@@ -3,6 +3,9 @@
 
 <head>
   <title>canvas test-07 - 实例2:lineTo绘制菊花</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
 </head>
 
 <body>
@@ -11,7 +14,7 @@
 
     原理: 将圆360度划分为24份每份15度，采用类似一笔画的方法绘制出24个夹角，最后合并路径描边填充。
   </pre>
-  <canvas id="stage" width="600" height="600" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <canvas id="stage" width="600" height="600" style="border: 1px solid red; margin: 20px"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');

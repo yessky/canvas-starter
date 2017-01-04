@@ -3,6 +3,9 @@
 
 <head>
   <title>canvas test-19 - canvas事件</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
 </head>
 
 <body>
@@ -17,24 +20,28 @@
       2. 重绘时，调用ctx.isPointInPath方法判断那个对象被选中
   </pre>
   <p></p>
-  <canvas id="stage" width="400" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <canvas id="stage" width="400" height="400" style="border: 1px solid red; margin: 20px"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
 
-  var objects = [];
+  var objects = {};
   var bbox = canvas.getBoundingClientRect();
   var canvasWidth = canvas.width;
   var canvasHeight = canvas.height;
-  objects.push(new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 40, 'rgb(0,255,0)', 'rgb(255,0,0)'));
-  objects.push(new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgb(255,0,0)'));
+  var zindex = 1;
+  var circle = new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 40, 'rgb(0,255,0)', 'rgba(255,0,0,.5)');
+  var rect = new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
+  objects[circle.zindex] = circle;
+  objects[rect.zindex] = rect;
+
   window.onload = function() {
     renderAll();
   };
 
   function renderAll() {
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
-    for (var i = 0, l = objects.length; i < l; ++i) {
+    for (var i in objects) {
       objects[i].draw(ctx);
     }
   }
@@ -66,6 +73,7 @@
       activeObject.ox = activeObject.x;
       activeObject.oy = activeObject.y;
       activeObject.setSelected(true);
+      bringTop(activeObject);
       moveHandler = bind(canvas, 'mousemove', onDragMove);
       endHandler = bind(canvas, 'mouseup', onDragEnd);
     }
@@ -93,13 +101,24 @@
     }
   }
 
+  function bringTop(object) {
+    delete objects[object.zindex];
+    object.zindex = zindex++;
+    objects[object.zindex] = object;
+  }
+
   function findActiveObject(e) {
     var p = getPointer(e.pageX, e.pageY);
-    for (var i = objects.length - 1; i > -1; --i) {
+    console.log([p.x,p.y,e.layerX,e.layerY]);
+    var object = null;
+    for (var i in objects) {
       if (objects[i].containsPoint(p.x, p.y)) {
-        return objects[i];
+        if (!object || objects[i].zindex >= object.zindex) {
+          object = objects[i];
+        }
       }
     }
+    return object;
   }
 
   // helpers
@@ -131,6 +150,7 @@
     this.y = y;
     this.ox = x;
     this.oy = y;
+    this.zindex = zindex++;
     this.raidus = r;
     this.fillStyle = fillStyle;
     this.selectedStyle = selectedStyle;
@@ -170,6 +190,7 @@
     this.y = y;
     this.ox = x;
     this.oy = y;
+    this.zindex = zindex++;
     this.width = width;
     this.height = height;
     this.fillStyle = fillStyle;

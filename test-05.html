@@ -3,6 +3,9 @@
 
 <head>
   <title>canvas test-05 - ctx.arc</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
 </head>
 
 <body>
@@ -21,7 +24,7 @@
 
     注意: 逆时针绘制时，结束角度为顺时针的角度，因此Math.PI / 4绘制的弧线同顺时针 Math.PI * 7 / 4的长度一致
   </pre>
-  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <canvas id="stage" width="600" height="400" style="border: 1px solid red; margin: 20px"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');

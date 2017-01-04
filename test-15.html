@@ -3,6 +3,9 @@
 
 <head>
   <title>canvas test-15 - ctx.shadowOffsetX/shadowOffsetY/shadowColor/shadowBlur阴影</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
 </head>
 
 <body>
@@ -15,7 +18,7 @@
     ctx.shadowBlur: 阴影的模糊范围（值越大越模糊）
   </pre>
   <p></p>
-  <canvas id="stage" width="600" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <canvas id="stage" width="600" height="400" style="border: 1px solid red; margin: 20px"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');

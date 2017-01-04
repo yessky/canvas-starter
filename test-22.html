@@ -28,20 +28,20 @@
   var zindex = 1;
   var tickId = null;
   var lastTimestamp = 0;
-  var slowestDuration = 4200;
-  var fastDuration = 3200;
-  var gameImages = null;
+  var player = null;
+  var background = null;
 
   window.onload = function() {
     loadImages({
       stumb: 'images/runner/stumb.png',
       tree: 'images/runner/tree.png',
-      background: 'images/runner/bg.png'
+      background: 'images/runner/bg.png',
+      player: 'images/runner/person.png'
     }, function(images) {
       gameImages = images;
-      // console.log(sprites)
+      drawBackground(images);
       drawStumbs(images);
-      // drawRoad(sprites[2]);
+      drawPlayer(images);
       tickId = window.requestAnimationFrame(renderAll);
     });
   };
@@ -50,62 +50,67 @@
     var elasped = ts - lastTimestamp;
     lastTimestamp = ts;
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
-    drawBackground(gameImages.background);
+
+    // redraw
+    renderEntity(background, ctx, elasped);
     for (var i in objects) {
-      objects[i].update(elasped);
-      objects[i].render(ctx);
+      renderEntity(objects[i], ctx, elasped);
       if (objects[i].isEnded()) {
-        // var au = Math.floor(zindex / 3) * 50;
-        // var du = slowestDuration - au;
-        // if (du < fastDuration) {
-        //   du += au;
-        // }
-        // if (du > slowestDuration) {
-        //   du = slowestDuration;
-        // }
-        du = slowestDuration;
-        var sn = drawStumb(objects[i].sprite, objects[i].dir, 0, du);
-        objects[sn.zindex] = sn;
+        var object = drawStumb(objects[i].sprite, objects[i].dir, 0);
+        objects[object.zindex] = object;
         delete objects[i];
       }
     }
-    // dra
-    if (Object.keys(objects).length !== 0) {
-      window.requestAnimationFrame(renderAll);
-    }
+    renderEntity(player, ctx, elasped);
+
+    // game lopp
+    window.requestAnimationFrame(renderAll);
+  }
+
+  function renderEntity(entity, ctx, ts) {
+    entity.update(ts);
+    entity.render(ctx);
   }
 
   // drawers
 
-  function drawBackground(background) {
-    var w = background.width;
-    var h = background.height;
-    ctx.drawImage(background, (canvasWidth - w) / 2, canvasHeight - h, w, h);
+  function drawBackground(images) {
+    var w = images.background.width;
+    var h = images.background.height;
+    background = new Background(
+      new Vector2(canvasWidth / 2 - w / 2, canvasHeight - h),
+      new Sprite(images.background, new Vector2(0, 0), new Vector2(w, h), 0, [0])
+    );
+  }
+
+  function drawPlayer(images) {
+    var spw = images.player.width / 2;
+    var sph = images.player.height;
+    player = new Player(
+      new Vector2(canvasWidth / 2 - spw / 2, canvasHeight - sph - 100),
+      new Sprite(images.player, new Vector2(0, 0), new Vector2(spw, sph), 0.005, [0, 1], 1)
+    );
   }
 
   function drawStumbs(images) {
     var stumb = images.stumb;
     var tree = images.tree;
-    var s1 = drawStumb(stumb, 1, 0.1, slowestDuration);
-    var s2 = drawStumb(stumb, 1, 0.33, slowestDuration);
-    var s3 = drawStumb(stumb, 1, 0.66, slowestDuration);
-    var s4 = drawStumb(stumb, 2, 0.1, slowestDuration);
-    var s5 = drawStumb(stumb, 2, 0.33, slowestDuration);
-    var s6 = drawStumb(stumb, 2, 0.66, slowestDuration);
+    var s1 = drawStumb(stumb, 1, 0.3);
+    var s2 = drawStumb(tree, 1, 0.8);
+    var s4 = drawStumb(tree, 2, 0.4);
+    var s5 = drawStumb(stumb, 2, 0.8);
     objects[s1.zindex] = s1;
     objects[s2.zindex] = s2;
-    objects[s3.zindex] = s3;
     objects[s4.zindex] = s4;
     objects[s5.zindex] = s5;
-    objects[s6.zindex] = s6;
   }
 
-  function drawStumb(stumb, dir, percent, duration) {
+  function drawStumb(stumb, dir, percent) {
     var rw = stumb.width;
     var rh = stumb.height;
-    var scale = 0.6;
-    var scale2 = 1.2;
-    var offy1 = 280 + (dir == 1 ? 20 : 0);
+    var scale = 0.4;
+    var scale2 = 1;
+    var offy1 = 350 + (dir == 1 ? 20 : 0);
     var offx1 = 200;
     var offx2 = -180;
     var startpos = new Vector2(dir == 1 ? offx1 : canvasWidth - offx1, offy1 + rh * scale / 2);
@@ -114,11 +119,9 @@
     var endsize = new Vector2(rw * scale2, rh * scale2);
     var subpos = endpos.sub(startpos);
     var subsize = endsize.sub(startsize);
-    duration = duration || slowestDuration;
     return new Stumb(
       stumb,
       dir,
-      duration * (1 - percent),
       startpos.add(subpos.multiply(percent)),
       endpos,
       startsize.add(subsize.multiply(percent)),
@@ -129,10 +132,8 @@
   // ====================================================================================
   // Objects
 
-  function Stumb(sprite, dir, duration, startpos, endpos, startsize, endsize) {
+  function Stumb(sprite, dir, startpos, endpos, startsize, endsize) {
     this.sprite = sprite;
-    this.duration = duration;
-    this.elasped = 0;
     this.dir = dir;
     this.zindex = zindex++;
     this.pos = startpos;
@@ -141,17 +142,20 @@
     this.endpos = endpos;
     this.startsize = startsize;
     this.endsize = endsize;
-    this.addpos = endpos.sub(startpos);
-    this.addsize = endsize.sub(startsize);
+    var addpos = endpos.sub(startpos);
+    var addsize = endsize.sub(startsize);
+    var kp = addpos.y / addpos.x;
+    var sp = addsize.y / addsize.x;
+    var speed = 80 / 1000;
+    this.pspeed = new Vector2(speed * (addpos.x > 0 ? 1 : -1), speed * Math.abs(kp));
+    this.sspeed = new Vector2(speed / 3, speed * sp / 3);
+    this.avelocity = this.pspeed.multiply(0.001);
   }
 
   Stumb.prototype.update = function(ts) {
-    var percent = (this.elasped + ts) / this.duration;
-    var apos = this.addpos.multiply(percent);
-    var asize = this.addsize.multiply(percent);
-    this.elasped += ts;
-    this.pos = this.startpos.add(apos);
-    this.size = this.startsize.add(asize);
+    this.pos = this.pos.add(this.pspeed.multiply(ts));
+    this.size = this.size.add(this.sspeed.multiply(ts));
+    this.pspeed = this.pspeed.add(this.avelocity.multiply(ts));
   };
 
   Stumb.prototype.render = function(ctx) {
@@ -165,7 +169,72 @@
   };
 
   Stumb.prototype.isEnded = function() {
-    return this.elasped > this.duration;
+    return Math.abs(this.pos.x) > Math.abs(this.endpos.x) && Math.abs(this.pos.y) > Math.abs(this.endpos.y);
+  };
+
+  // Player & Background
+
+  var Player = inherits(Display, {});
+  var Background = inherits(Display, {});
+
+  // Display
+
+  function Display(pos, sprite) {
+    this.pos = pos;
+    this.sprite = sprite;
+  }
+
+  Display.prototype.update = function(ts) {
+    this.sprite.update(ts);
+  };
+
+  Display.prototype.render = function(ctx) {
+    ctx.save();
+    ctx.translate(this.pos.x, this.pos.y);
+    this.sprite.render(ctx);
+    ctx.restore();
+  };
+
+  // Sprite
+
+  function Sprite(image, pos, size, speed, frames, dir, once) {
+    this.image = image;
+    this.size = size;
+    this.pos = pos;
+    this.speed = speed;
+    this.frames = frames;
+    this.dir = dir;
+    this.once = once;
+    this.index = 0;
+  }
+
+  Sprite.prototype.update = function(ts) {
+    this.index += this.speed * ts;
+  };
+
+  Sprite.prototype.render = function(ctx) {
+    var frame = 0;
+
+    if (this.speed > 0) {
+      var max = this.frames.length;
+      var idx = Math.floor(this.index);
+      frame = this.frames[idx % max];
+
+      if (this.once && idx >= max) {
+        return this.done = true;
+      }
+    }
+
+    var x = this.pos.x;
+    var y = this.pos.y;
+
+    if (this.dir == 1) {
+      x += frame * this.size.x;
+    } else {
+      y += frame * this.size.y;
+    }
+
+    ctx.drawImage(this.image, x, y, this.size.x, this.size.y, 0, 0, this.size.x, this.size.y);
   };
 
   // Vector2
@@ -225,6 +294,25 @@
         elem.removeEventListener(type, listener, false);
       }
     };
+  }
+
+  function inherits(base, proto) {
+    var newctor = proto.constructor !== {}.constructor && proto.constructor;
+
+    function ctor() {
+      base.apply(this, arguments);
+      newctor && newctor.apply(this.arguments);
+    }
+    var F = new Function;
+    F.prototype = new base;
+
+    ctor.prototype = new F;
+    for (var p in proto) {
+      ctor.prototype[p] = proto[p];
+    }
+    ctor.prototype.constructor = ctor;
+
+    return ctor;
   }
 
   function getPointer(x, y) {

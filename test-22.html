@@ -13,6 +13,7 @@
 
 <body>
   <canvas id="stage"></canvas>
+  <script src="raf.js"></script>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
@@ -47,9 +48,8 @@
   };
 
   function renderAll(ts) {
-    var elasped = ts - lastTimestamp;
+    var elasped = lastTimestamp ? ts - lastTimestamp : 0;
     lastTimestamp = ts;
-    console.log(elasped);
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
 
     // redraw

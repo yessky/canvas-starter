@@ -12,9 +12,18 @@
   <pre style="font-size: 14px">
     canvas碰撞检测（光线投射法）原理
 
-      物体A与物体B的速度向量交点
+      两物体A、B, 该方法假设碰撞时物体A运动，物体B不动，如果满足A速度方向直线与B物体顶部水平直线交点落在物体边界之间并且物体A在B的下方，则认为物体A、B碰撞
 
+      转化为数学模型为求两条直线的交点(x,y)有：
 
+      y = k1 * x + b1; // @1
+      y = k2 * x + b2; // @2
+      x >= B.x && x <= B.x + B.width && y >= B.y && y <= B.y + B.height;
+
+      联立方程1,2解得：
+
+      x = (b2 - b1) / (k1 - k2);
+      y = (k1 * b2 - k2 * b1) / (k1 - k2);
   </pre>
   <p></p>
   <canvas id="stage" width="400" height="400" style="border: 1px solid red; margin: 20px"></canvas>
@@ -87,6 +96,7 @@
     activeObject.x = activeObject.ox + dx;
     activeObject.y = activeObject.oy + dy;
     canvas.style.cursor = 'move';
+    rayHitTest(activeObject, dy / (dx + 0.0000001), activeObject.x, activeObject.y);
     renderAll();
   }
 
@@ -118,6 +128,24 @@
       }
     }
     return object;
+  }
+
+  function rayHitTest(obj, k1, x, y) {
+    var b1 = y - k1 * x;
+    var bounds1 = obj.getBounds();
+    // for (var i in objects) {
+    //   var cur = objects[i];
+    //   if (cur !== obj) {
+    //     // var bounds2 = cur.getBounds();
+    //     // var k2 = 0;
+    //     // var b2 = bounds2.top - k2 * bounds2.left;
+    //     // var kx = (b2 - b1) / (k1 - k2);
+    //     // var ky = (k1 * b2 - k2 * b1) / (k1 - k2);
+    //     // if (kx >= bounds2.left && kx <= bounds2.right && ky >= bounds2.top && ky <= bounds2.bottom) {
+    //     //   console.log(obj.zindex + ' hit ' + cur.zindex);
+    //     // }
+    //   }
+    // }
   }
 
   // helpers
@@ -180,6 +208,15 @@
     ctx.restore();
   };
 
+  KCircle.prototype.getBounds = function() {
+    return {
+      left: this.x - this.raidus,
+      right: this.x + this.raidus,
+      top: this.y - this.raidus,
+      bottom: this.y + this.raidus
+    }
+  };
+
   KCircle.prototype.containsPoint = function(x, y) {
     return Math.sqrt((this.x - x) * (this.x - x) + (this.y - y) * (this.y - y)) < this.raidus;
   };
@@ -219,6 +256,15 @@
     ctx.closePath();
     ctx.fill();
     ctx.restore();
+  };
+
+  KRect.prototype.getBounds = function() {
+    return {
+      left: this.x,
+      right: this.x + this.width,
+      top: this.y,
+      bottom: this.y + this.height
+    }
   };
 
   KRect.prototype.containsPoint = function(x, y) {

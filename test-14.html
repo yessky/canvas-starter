@@ -3,6 +3,9 @@
 
 <head>
   <title>canvas test-14 - ctx.globalCompositeOperation图形组合</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
 </head>
 
 <body>
@@ -29,13 +32,15 @@
 
         lighter:原有图形和新图形都显示，交集部分做颜色叠加
 
+        darker:原有图形和新图形都显示，交集部分做颜色减少
+
         xor:重叠飞部分不现实
 
         copy:只显示新图形
 
   </pre>
   <p></p>
-  <canvas id="stage" width="400" height="400" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <canvas id="stage" width="400" height="400" style="border: 1px solid red; margin: 20px"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
@@ -51,6 +56,7 @@
     'source-atop', // 显示原图形和交集部分，交集为新图形颜色且在上
     'destination-atop', // 显示新图形和交集部分，交集为原图形颜色
     'lighter', // 新图形和原图形都显示，交集部分颜色叠加
+    'darker', // 新图形和原图形都显示，交集部分颜色减少
     'xor', // 新图形和原图形都显示，交集部分不显示
     'copy', // 只显示新图形
   ];

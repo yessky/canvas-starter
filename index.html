@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas starter lessons</title>
+  <style type="text/css">
+  body {font-size: 14px; line-height: 125%; color: #333;}
+  a {display: block; text-decoration: none}
+  a:hover { text-decoration: underline}
+  </style>
+</head>
+
+<body>
+  <script type="text/javascript">
+  var wrapper = document.body;
+  for (var i = 1; i < 23; ++i) {
+    var a = document.createElement('a');
+    a.href = 'test-' + ((i < 10 ? '0' : '') + i) + '.html';
+    a.innerHTML = 'lesson ' + i;
+    wrapper.appendChild(a);
+  }
+  </script>
+</body>
+
+</html>

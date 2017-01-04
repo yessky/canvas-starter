@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-22 - canvas 小游戏改进版（添加sprite及优化缩放）</title>
+  <meta name="viewport" content="width=device-width,maximum-scale=1,minimum-scale=1,user-scalable=no">
+  <style type="text/css">
+    * {margin: 0; padding: 0}
+    html, body { height: 100%; overflow: hidden; }
+    canvas { border: none; width: 100%; height: 100%; max-width: 414px; max-height: 738px; }
+  </style>
+</head>
+
+<body>
+  <canvas id="stage"></canvas>
+  <script src="raf.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  // resize canvas
+  canvas.width = 720;
+  canvas.height = 1080;
+
+  var objects = {};
+  var bbox = canvas.getBoundingClientRect();
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  var zindex = 1;
+  var tickId = null;
+  var lastTimestamp = 0;
+  var player = null;
+  var background = null;
+
+  // Start game
+  window.onload = function() {
+    loadImages({
+      stumb: 'images/runner/stumb.png',
+      tree: 'images/runner/tree.png',
+      background: 'images/runner/bg.png',
+      player: 'images/runner/person.png'
+    }, function(images) {
+      drawBackground(images);
+      drawStumbs(images);
+      drawPlayer(images);
+      tickId = window.requestAnimationFrame(renderAll);
+    });
+  };
+
+  function renderAll(ts) {
+    var elasped = lastTimestamp ? ts - lastTimestamp : 0;
+    lastTimestamp = ts;
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+
+    // redraw
+    renderEntity(background, ctx, elasped);
+    for (var i in objects) {
+      renderEntity(objects[i], ctx, elasped);
+      if (objects[i].isEnded()) {
+        var object = drawStumb(objects[i].sprite, objects[i].dir, 0);
+        objects[object.zindex] = object;
+        delete objects[i];
+      }
+    }
+    renderEntity(player, ctx, elasped);
+
+    // game lopp
+    window.requestAnimationFrame(renderAll);
+  }
+
+  function renderEntity(entity, ctx, ts) {
+    entity.update(ts);
+    entity.render(ctx);
+  }
+
+  // drawers
+
+  function drawBackground(images) {
+    var w = images.background.width;
+    var h = images.background.height;
+    background = new Background(
+      new Vector2(canvasWidth / 2 - w / 2, canvasHeight - h),
+      new Sprite(images.background, new Vector2(0, 0), new Vector2(w, h), 0, [0])
+    );
+  }
+
+  function drawPlayer(images) {
+    var spw = images.player.width / 2;
+    var sph = images.player.height;
+    player = new Player(
+      new Vector2(canvasWidth / 2 - spw / 2, canvasHeight - sph - 100),
+      new Sprite(images.player, new Vector2(0, 0), new Vector2(spw, sph), 0.005, [0, 1], 1)
+    );
+  }
+
+  function drawStumbs(images) {
+    var stumb = images.stumb;
+    var tree = images.tree;
+    var s1 = drawStumb(stumb, 1, 0.3);
+    var s2 = drawStumb(tree, 1, 0.8);
+    var s4 = drawStumb(tree, 2, 0.4);
+    var s5 = drawStumb(stumb, 2, 0.8);
+    objects[s1.zindex] = s1;
+    objects[s2.zindex] = s2;
+    objects[s4.zindex] = s4;
+    objects[s5.zindex] = s5;
+  }
+
+  function drawStumb(stumb, dir, percent) {
+    var rw = stumb.width;
+    var rh = stumb.height;
+    var scale = 0.4;
+    var scale2 = 1;
+    var offy1 = 350 + (dir == 1 ? 20 : 0);
+    var offx1 = 200;
+    var offx2 = -180;
+    var startpos = new Vector2(dir == 1 ? offx1 : canvasWidth - offx1, offy1 + rh * scale / 2);
+    var endpos = new Vector2(dir == 1 ? offx2 : canvasWidth - offx2, canvasHeight - 400);
+    var startsize = new Vector2(rw * scale, rh * scale);
+    var endsize = new Vector2(rw * scale2, rh * scale2);
+    var subpos = endpos.sub(startpos);
+    var subsize = endsize.sub(startsize);
+    return new Stumb(
+      stumb,
+      dir,
+      startpos.add(subpos.multiply(percent)),
+      endpos,
+      startsize.add(subsize.multiply(percent)),
+      endsize
+    );
+  }
+
+  // ====================================================================================
+  // Objects
+
+  function Stumb(sprite, dir, startpos, endpos, startsize, endsize) {
+    this.sprite = sprite;
+    this.dir = dir;
+    this.zindex = zindex++;
+    this.pos = startpos;
+    this.size = startsize;
+    this.startpos = startpos;
+    this.endpos = endpos;
+    this.startsize = startsize;
+    this.endsize = endsize;
+    var addpos = endpos.sub(startpos);
+    var addsize = endsize.sub(startsize);
+    var kp = addpos.y / addpos.x;
+    var sp = addsize.y / addsize.x;
+    var speed = 80 / 1000;
+    this.pspeed = new Vector2(speed * (addpos.x > 0 ? 1 : -1), speed * Math.abs(kp));
+    this.sspeed = new Vector2(speed / 3, speed * sp / 3);
+    this.avelocity = this.pspeed.multiply(0.001);
+  }
+  Stumb.prototype.update = function(ts) {
+    this.pos = this.pos.add(this.pspeed.multiply(ts));
+    this.size = this.size.add(this.sspeed.multiply(ts));
+    this.pspeed = this.pspeed.add(this.avelocity.multiply(ts));
+  };
+  Stumb.prototype.render = function(ctx) {
+    var pos = this.pos;
+    var size = this.size;
+    var x = pos.x;
+    var y = pos.y;
+    var w = size.x;
+    var h = size.y;
+    ctx.drawImage(this.sprite, x - w / 2, y - h / 2, w, h);
+  };
+  Stumb.prototype.isEnded = function() {
+    return Math.abs(this.pos.x) > Math.abs(this.endpos.x) && Math.abs(this.pos.y) > Math.abs(this.endpos.y);
+  };
+
+  // Player & Background
+
+  var Player = inherits(Display, {});
+  var Background = inherits(Display, {});
+
+  // Display
+
+  function Display(pos, sprite) {
+    this.pos = pos;
+    this.sprite = sprite;
+  }
+  Display.prototype.update = function(ts) {
+    this.sprite.update(ts);
+  };
+  Display.prototype.render = function(ctx) {
+    ctx.save();
+    ctx.translate(this.pos.x, this.pos.y);
+    this.sprite.render(ctx);
+    ctx.restore();
+  };
+
+  // Sprite
+
+  function Sprite(image, pos, size, speed, frames, dir, once) {
+    this.image = image;
+    this.size = size;
+    this.pos = pos;
+    this.speed = speed;
+    this.frames = frames;
+    this.dir = dir;
+    this.once = once;
+    this.index = 0;
+  }
+  Sprite.prototype.update = function(ts) {
+    this.index += this.speed * ts;
+  };
+  Sprite.prototype.render = function(ctx) {
+    var frame = 0;
+
+    if (this.speed > 0) {
+      var max = this.frames.length;
+      var idx = Math.floor(this.index);
+      frame = this.frames[idx % max];
+
+      if (this.once && idx >= max) {
+        return this.done = true;
+      }
+    }
+
+    var x = this.pos.x;
+    var y = this.pos.y;
+
+    if (this.dir == 1) {
+      x += frame * this.size.x;
+    } else {
+      y += frame * this.size.y;
+    }
+
+    ctx.drawImage(this.image, x, y, this.size.x, this.size.y, 0, 0, this.size.x, this.size.y);
+  };
+
+  // Vector2
+
+  function Vector2(x, y) {
+    this.x = x || 0;
+    this.y = y || 0;
+  }
+  Vector2.prototype = {
+    constructor: Vector2,
+    set: function(x, y) {
+      this.x = x || 0;
+      this.y = y || 0;
+    },
+    distance: function(v) {
+      var dx = v.x - this.x;
+      var dy = v.y - this.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    },
+    dot: function(v) {
+      return this.x * v.x + this.y * v.y;
+    },
+    modulus: function() {
+      return Math.sqrt(this.x * this.x + this.y * this.y);
+    },
+    add: function(v) {
+      return new Vector2(this.x + v.x, this.y + v.y);
+    },
+    sub: function(v) {
+      return new Vector2(this.x - v.x, this.y - v.y);
+    },
+    multiply: function(m) {
+      return new Vector2(this.x * m, this.y * m);
+    },
+    unitfy: function() {
+      var l = this.modulus();
+      return new Vector2(this.x / l, this.y / l);
+    }
+  };
+  Vector2.sub = function(a, b) {
+    if (a instanceof Vector2 && b instanceof Vector2) {
+      return a.sub(b);
+    }
+    return new Vector2(a.x - b.x, a.y - b.y);
+  };
+
+  // helpers
+
+  function rnd(min, max) {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  function bind(elem, type, listener) {
+    elem.addEventListener(type, listener, false);
+    return {
+      remove: function() {
+        elem.removeEventListener(type, listener, false);
+      }
+    };
+  }
+
+  function inherits(base, proto) {
+    var newctor = proto.constructor !== {}.constructor && proto.constructor;
+
+    function ctor() {
+      base.apply(this, arguments);
+      newctor && newctor.apply(this.arguments);
+    }
+    var F = new Function;
+    F.prototype = new base;
+
+    ctor.prototype = new F;
+    for (var p in proto) {
+      ctor.prototype[p] = proto[p];
+    }
+    ctor.prototype.constructor = ctor;
+
+    return ctor;
+  }
+
+  function getPointer(x, y) {
+    var xr = canvasWidth / bbox.width;
+    var yr = canvasHeight / bbox.height;
+    return {
+      x: (x - bbox.left) * xr,
+      y: (y - bbox.top) * yr
+    };
+  }
+
+  function loadImages(images, cb) {
+    function load(src, cb) {
+      var img = new Image;
+      img.src = src;
+      if (img.complete) {
+        return cb(img);
+      }
+      img.onload = function() {
+        cb(img);
+      };
+    }
+    var result = {};
+    var names = Object.keys(images);
+    var total = names.length;
+    var loaded = 0;
+    names.forEach(function(name) {
+      load(images[name], function(data) {
+        result[name] = data;
+        loaded += 1;
+        if (loaded === total) {
+          cb(result);
+        }
+      });
+    });
+  }
+  </script>
+</body>
+
+</html>

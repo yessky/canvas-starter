@@ -3,14 +3,16 @@
 
 <head>
   <title>canvas test-22 - canvas 小游戏改进版（添加sprite及优化缩放）</title>
+  <meta name="viewport" content="width=device-width,maximum-scale=1,minimum-scale=1,user-scalable=no">
+  <style type="text/css">
+    * {margin: 0; padding: 0}
+    html, body { height: 100%; overflow: hidden; }
+    canvas { border: none }
+  </style>
 </head>
 
 <body>
-  <pre style="font-size: 14px">
-    
-  </pre>
-  <p></p>
-  <canvas id="stage" style="float: left; border: 1px solid red; margin-bottom: 20px"></canvas>
+  <canvas id="stage"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
@@ -18,8 +20,8 @@
   // resize canvas
   canvas.width = 720;
   canvas.height = 1080;
-  canvas.style.width = '320px';
-  canvas.style.height = '480px';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
 
   var objects = {};
   var bbox = canvas.getBoundingClientRect();
@@ -31,6 +33,7 @@
   var player = null;
   var background = null;
 
+  // Start game
   window.onload = function() {
     loadImages({
       stumb: 'images/runner/stumb.png',
@@ -38,7 +41,6 @@
       background: 'images/runner/bg.png',
       player: 'images/runner/person.png'
     }, function(images) {
-      gameImages = images;
       drawBackground(images);
       drawStumbs(images);
       drawPlayer(images);
@@ -151,13 +153,11 @@
     this.sspeed = new Vector2(speed / 3, speed * sp / 3);
     this.avelocity = this.pspeed.multiply(0.001);
   }
-
   Stumb.prototype.update = function(ts) {
     this.pos = this.pos.add(this.pspeed.multiply(ts));
     this.size = this.size.add(this.sspeed.multiply(ts));
     this.pspeed = this.pspeed.add(this.avelocity.multiply(ts));
   };
-
   Stumb.prototype.render = function(ctx) {
     var pos = this.pos;
     var size = this.size;
@@ -167,7 +167,6 @@
     var h = size.y;
     ctx.drawImage(this.sprite, x - w / 2, y - h / 2, w, h);
   };
-
   Stumb.prototype.isEnded = function() {
     return Math.abs(this.pos.x) > Math.abs(this.endpos.x) && Math.abs(this.pos.y) > Math.abs(this.endpos.y);
   };
@@ -183,11 +182,9 @@
     this.pos = pos;
     this.sprite = sprite;
   }
-
   Display.prototype.update = function(ts) {
     this.sprite.update(ts);
   };
-
   Display.prototype.render = function(ctx) {
     ctx.save();
     ctx.translate(this.pos.x, this.pos.y);
@@ -207,11 +204,9 @@
     this.once = once;
     this.index = 0;
   }
-
   Sprite.prototype.update = function(ts) {
     this.index += this.speed * ts;
   };
-
   Sprite.prototype.render = function(ctx) {
     var frame = 0;
 

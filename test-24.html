@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-24 - 图片翻转</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
+</head>
+
+<body>
+  <pre>
+    图片翻转效果原理
+
+      ctx.scale(-1, 1) 或 ctx.scale(1, -1)
+  </pre>
+  <p></p>
+  <canvas id="stage" width="760" height="800" style="border: 1px solid red; margin: 20px"></canvas>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  // drawImage
+  var img = new Image();
+  img.setAttribute('crossOrigin', 'anonymous');
+  img.onload = drawScence;
+  img.src = 'test.png';
+
+  function drawScence() {
+    ctx.drawImage(img, 0, 0);
+
+    // flipX
+    ctx.save();
+    ctx.translate(img.width + img.width + 20, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+
+    // flipY
+    ctx.save();
+    ctx.translate(0, img.height + img.height + 20);
+    ctx.scale(1, -1);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+
+    // flipXY
+    ctx.save();
+    ctx.translate(img.width + img.width + 20, img.height + img.height + 20);
+    ctx.scale(-1, -1);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+
+    // rotate & flipY
+    ctx.save();
+    ctx.translate(img.width / 3, 450);
+    ctx.rotate(-Math.PI / 6);
+    ctx.drawImage(img, -img.width / 2, img.height / 2 + 10);
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(img.width / 3, 450);
+    ctx.rotate(-Math.PI / 6);
+    ctx.scale(0.8, -0.8); // 翻转缩放
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+
+    // rotate & flipX
+    ctx.save();
+    ctx.translate(img.width * 1.4, 500);
+    ctx.rotate(-Math.PI / 6);
+    ctx.drawImage(img, -img.width / 2, img.height / 2 + 10);
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(img.width * 1.4, 500);
+    ctx.rotate(-Math.PI / 6);
+    ctx.scale(-.5, .5); // 翻转缩放
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+  }
+  </script>
+</body>
+
+</html>

@@ -2,47 +2,45 @@
 <html>
 
 <head>
-  <title>canvas test-20 - canvas碰撞检测（光线投射法）</title>
+  <title>canvas test-23 - canvas像素碰撞检测</title>
   <style type="text/css">
-  * {margin: 0; padding: 0}
+  * {
+    margin: 0;
+    padding: 0
+  }
+  pre {
+    word-break: break-all;
+    word-wrap: break-word;
+  }
   </style>
 </head>
 
 <body>
   <pre style="font-size: 14px">
-    canvas碰撞检测（光线投射法）原理
+    canvas像素碰撞检测原理
 
-      两物体A、B, 该方法假设碰撞时物体A运动，物体B不动，如果满足A速度方向直线与B物体顶部水平直线交点落在物体边界之间并且物体A在B的下方，则认为物体A、B碰撞
-
-      转化为数学模型为求两条直线的交点(x,y)有：
-
-      y = k1 * x + b1; // @1
-      y = k2 * x + b2; // @2
-      x >= B.x && x <= B.x + B.width && y >= B.y && y <= B.y + B.height;
-
-      联立方程1,2解得：
-
-      x = (b2 - b1) / (k1 - k2);
-      y = (k1 * b2 - k2 * b1) / (k1 - k2);
+      为每个对象分配一个唯一的颜色值，取得对应鼠标坐标出的像素，获取颜色值，从而确认是哪个对象在于鼠标进行交互
   </pre>
   <p></p>
   <canvas id="stage" width="400" height="400" style="border: 1px solid red; margin: 20px"></canvas>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
+  var hitCanvas = document.createElement('canvas');
+  var hitCtx = hitCanvas.getContext('2d');
+  hitCanvas.width = canvas.width;
+  hitCanvas.height = canvas.height;
 
   var objects = {};
+  var objectsByColor = {};
   var bbox = canvas.getBoundingClientRect();
   var canvasWidth = canvas.width;
   var canvasHeight = canvas.height;
   var zindex = 1;
-  var intersectionPoint = null;
-  // var circle = new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 40, 'rgb(0,255,0)', 'rgba(255,0,0,.5)');
-  var rect1 = new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
-  var rect2 = new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
-  // objects[circle.zindex] = circle;
-  objects[rect1.zindex] = rect1;
-  objects[rect2.zindex] = rect2;
+
+  new KCircle(rnd(50, canvasWidth - 50), rnd(50, canvasHeight - 50), 20, 'rgb(0,255,0)', 'rgba(255,0,0,.5)');
+  new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 60, 80, 'rgb(50,50,50)', 'rgba(255,0,0,.5)');
+  new KRect(rnd(10, canvasWidth - 90), rnd(10, canvasHeight - 90), 80, 80, 'rgb(0,120,0)', 'rgba(255,0,0,.5)');
 
   window.onload = function() {
     renderAll();
@@ -52,16 +50,6 @@
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
     for (var i in objects) {
       objects[i].draw(ctx);
-    }
-    if (intersectionPoint) {
-    	ctx.beginPath();
-      ctx.save();
-      ctx.arc(intersectionPoint[0], intersectionPoint[1], 5, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.fillStyle = '#000';
-      ctx.fill();
-      ctx.restore();
-      intersectionPoint = null;
     }
   }
 
@@ -73,7 +61,7 @@
   var startHandler = null;
   var moveHandler = null;
   var endHandler = null;
- 
+
   startHandler = bind(canvas, 'mousedown', onDragStart);
 
   function onDragStart(e) {
@@ -84,18 +72,18 @@
       shouldRender = true;
     }
 
+    startX = e.clientX;
+    startY = e.clientY;
     activeObject = object;
 
     if (activeObject) {
-      startX = e.pageX;
-      startY = e.pageY;
       activeObject.ox = activeObject.x;
       activeObject.oy = activeObject.y;
       activeObject.setSelected(true);
       bringTop(activeObject);
       canvas.style.cursor = 'pointer';
-      moveHandler = bind(canvas, 'mousemove', onDragMove);
-      endHandler = bind(canvas, 'mouseup', onDragEnd);
+      moveHandler = bind(document, 'mousemove', onDragMove);
+      endHandler = bind(document, 'mouseup', onDragEnd);
     }
 
     if (shouldRender || activeObject) {
@@ -104,18 +92,17 @@
   }
 
   function onDragMove(e) {
-    var dx = e.pageX - startX;
-    var dy = e.pageY - startY;
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
     activeObject.x = activeObject.ox + dx;
     activeObject.y = activeObject.oy + dy;
     canvas.style.cursor = 'move';
-    rayHitTest(activeObject, dy / dx, activeObject.x, activeObject.y);
     renderAll();
   }
 
   function onDragEnd() {
-    moveHandler.remove();
-    endHandler.remove();
+    moveHandler && moveHandler.remove();
+    endHandler && endHandler.remove();
     canvas.style.cursor = 'default';
     if (activeObject) {
       activeObject.setSelected(false);
@@ -131,53 +118,31 @@
   }
 
   function findActiveObject(e) {
-    var p = getPointer(e.pageX, e.pageY);
-    var object = null;
-    for (var i in objects) {
-      if (objects[i].containsPoint(p.x, p.y)) {
-        if (!object || objects[i].zindex >= object.zindex) {
-          object = objects[i];
-        }
-      }
-    }
-    return object;
+    var p = getPointer(e.clientX, e.clientY);
+    var colorKey = getIntersectionKey(p.x, p.y);
+    return objectsByColor[colorKey];
   }
 
-  function rayHitTest(obj, k1, x, y) {
-    var b1 = y - k1 * x;
-    var bounds1 = obj.getBounds();
-    if (k1 === Infinity || k1 === -Infinity) {
-    	return;
+  function getIntersectionKey(x, y) {
+    hitCtx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    for (var i in objects) {
+      objects[i].draw(hitCtx, true);
     }
-    for (var key in objects) {
-      var cur = objects[key];
-      if (cur !== obj) {
-        var bounds2 = cur.getBounds();
-        var k2 = 0;
-        var b2 = bounds2.top - k2 * bounds2.left;
-        var kx = (b2 - b1) / (k1 - k2);
-        // var ky1 = (k1 * b2 - k2 * b1) / (k1 - k2);
-        var ky = k1 * kx + b1;
-        if (!isNaN(kx) && !isNaN(ky)) {
-          intersectionPoint = [kx, ky];
-          if (
-            kx >= bounds2.left && kx <= bounds2.right &&
-            (
-              (bounds1.bottom >= bounds2.top && bounds1.bottom <= bounds2.bottom) ||
-              (bounds1.top >= bounds2.top && bounds1.top <= bounds2.bottom)
-            )
-          ) {
-            console.log(obj.zindex + ' hit ' + cur.zindex);
-          }
-        }
-      }
-    }
+    var pixel = hitCtx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+    var toHex = function(num) {
+      return ('00' + num.toString(16)).slice(-2);
+    };
+    return '#' + toHex(pixel[0]) + toHex(pixel[1]) + toHex(pixel[2]);
   }
 
   // helpers
 
   function rnd(min, max) {
     return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  function rndColor() {
+    return '#' + ('000000' + (Math.random() * 0xffffff >> 0).toString(16)).slice(-6);
   }
 
   function bind(elem, type, listener) {
@@ -204,10 +169,20 @@
     this.ox = x;
     this.oy = y;
     this.zindex = zindex++;
+    var colorKey = rndColor();
+    while (true) {
+      if (!objectsByColor[colorKey]) {
+        break;
+      }
+      colorKey = rndColor();
+    }
+    this.colorKey = colorKey;
     this.raidus = r;
     this.fillStyle = fillStyle;
     this.selectedStyle = selectedStyle;
-    this.selectd = false;
+    this.selected = false;
+    objectsByColor[colorKey] = this;
+    objects[this.zindex] = this;
   }
 
   KCircle.prototype.type = 'circle';
@@ -221,12 +196,13 @@
     } else {
       this.fillStyle = this.fillStyle_;
     }
+    this.selected = selected;
     return this;
   };
 
-  KCircle.prototype.draw = function(ctx) {
+  KCircle.prototype.draw = function(ctx, fromColorKey) {
     ctx.save();
-    ctx.fillStyle = this.fillStyle;
+    ctx.fillStyle = fromColorKey ? this.colorKey : this.fillStyle;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.raidus, 0, Math.PI * 2);
     ctx.closePath();
@@ -253,11 +229,21 @@
     this.ox = x;
     this.oy = y;
     this.zindex = zindex++;
+    var colorKey = rndColor();
+    while (true) {
+      if (!objectsByColor[colorKey]) {
+        break;
+      }
+      colorKey = rndColor();
+    }
+    this.colorKey = colorKey;
     this.width = width;
     this.height = height;
     this.fillStyle = fillStyle;
     this.selectedStyle = selectedStyle;
-    this.selectd = false;
+    this.selected = false;
+    objectsByColor[colorKey] = this;
+    objects[this.zindex] = this;
   }
 
   KRect.prototype.type = 'rect';
@@ -271,12 +257,13 @@
     } else {
       this.fillStyle = this.fillStyle_;
     }
+    this.selected = selected;
     return this;
   };
 
-  KRect.prototype.draw = function(ctx) {
+  KRect.prototype.draw = function(ctx, fromColorKey) {
     ctx.save();
-    ctx.fillStyle = this.fillStyle;
+    ctx.fillStyle = fromColorKey ? this.colorKey : this.fillStyle;
     ctx.beginPath();
     ctx.rect(this.x, this.y, this.width, this.height);
     ctx.closePath();
@@ -318,6 +305,30 @@
     ctx.fillText(this.text, this.x - geom.width / 2, this.y - geom.height / 2);
     ctx.restore();
   };
+
+  function transform(p, deg, dx, dy) {
+    dx = dx || 0;
+    dy = dy || 0;
+    var cosa = Math.cos(deg);
+    var sina = Math.sin(deg);
+    // 数学上的直角坐标系中坐标变换矩阵是逆时针旋转deg度
+    var matrix = [
+      [cosa, -sina, dx],
+      [sina, cosa, dy],
+      [0, 0, 1]
+    ];
+    // canvas坐标系中的变化矩阵是顺时针旋转deg度
+    // 由 cos(-a) = cosa; sin(-a) = -sina 知
+    matrix[0][1] *= -1;
+    matrix[1][0] *= -1;
+    // 先平移还原到原始坐标系
+    p[0] -= dx;
+    p[1] -= dy;
+    return [
+      matrix[0][0] * p[0] + matrix[0][1] * p[1],
+      matrix[1][0] * p[0] + matrix[1][1] * p[1]
+    ];
+  }
   </script>
 </body>
 

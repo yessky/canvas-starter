@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-25 - pixel collision</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
+</head>
+
+<body>
+  <pre>
+    
+  </pre>
+  <p></p>
+  <canvas id="stage" width="600" height="400" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="raf.js"></script>
+  <script src="vector2.js"></script>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+  var hitCanvas = document.createElement('canvas');
+  var hitCtx = hitCanvas.getContext('2d');
+  hitCanvas.width = canvas.width;
+  hitCanvas.height = canvas.height;
+
+  var PI2 = Math.PI * 2;
+  var ARC = Math.PI / 180;
+  var fillColor = 'blue';
+  var lastTime = 0;
+  var rect1, rect2, ticker;
+
+  window.onload = init;
+
+  function init() {
+    rect1 = new Rect( new Vector2(100, 100), new Vector2(50, 80), 50 );
+    rect2 = new Rect( new Vector2(180, 100), new Vector2(40, 80), -30 );
+    ticker = window.requestAnimationFrame(rendering);
+  }
+
+  function rendering(ts) {
+    var t = lastTime ? ts - lastTime : 0;
+    lastTime = ts;
+    ctx.clearRect(0, 0, canvas.width + 1, canvas.height + 1);
+    rect1.update(t);
+    rect2.update(t * 1.1);
+    rect1.draw(ctx);
+    rect2.draw(ctx);
+    window.requestAnimationFrame(rendering);
+  }
+
+  function testCollision(obj1, obj2) {
+    hitCtx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.globalComposition = 'source-in';
+    rect1.draw(hitCtx, '#ffff00');
+    rect2.draw(hitCtx, '#00ffff');
+
+  }
+
+  function Rect(pos, size, deg) {
+    this.pos = pos;
+    this.size = size;
+    this.deg = (deg || 0) * ARC;
+    this.rot = ARC;
+  }
+
+  Rect.prototype.update = function(ts) {
+    this.deg += ARC * ts / 10;
+  };
+
+  Rect.prototype.draw = function(ctx, fillStyle) {
+    ctx.save();
+    ctx.fillStyle = fillStyle || fillColor;
+    ctx.translate(this.pos.x, this.pos.y);
+    ctx.rotate(this.deg);
+    ctx.fillRect(-this.size.x / 2, -this.size.y / 2, this.size.x, this.size.y);
+    ctx.restore();
+  };
+  </script>
+</body>
+
+</html>

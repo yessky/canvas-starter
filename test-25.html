@@ -45,18 +45,26 @@
     ctx.clearRect(0, 0, canvas.width + 1, canvas.height + 1);
     rect1.update(t);
     rect2.update(t * 1.1);
+    fillColor = testCollision() ? 'red' : 'blue';
     rect1.draw(ctx);
     rect2.draw(ctx);
     window.requestAnimationFrame(rendering);
   }
 
-  function testCollision(obj1, obj2) {
+  function testCollision() {
     hitCtx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.globalComposition = 'source-in';
-    rect1.draw(hitCtx, '#ffff00');
-    rect2.draw(hitCtx, '#00ffff');
-
+    ctx.globalComposition = 'source-atop';
+    rect1.draw(hitCtx, '#ffffff');
+    rect2.draw(hitCtx, '#ffffff');
+    ctx.restore();
+    var imgdata = hitCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (var i = 0, l = imgdata.length; i < l; i += 4) {
+      if (imgdata[i] > 0 || imgdata[i + 1] > 0 || imgdata[i + 2] > 0) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function Rect(pos, size, deg) {

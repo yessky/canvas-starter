@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>canvas test-25 - pixel collision</title>
+  <title>canvas test-25 - 像素级别碰撞检测</title>
   <style type="text/css">
   * {margin: 0; padding: 0}
   </style>
@@ -10,10 +10,16 @@
 
 <body>
   <pre>
-    
+    像素级别的碰撞检测原理
+
+      将待检测的两个图形采用单色求交集绘制到缓存的canvas上，检测canvas像素中是否包含有alpha通道是否不为透明像素时即发生碰撞
+
+      利用ctx.globalCompositeOperation = 'source-in'对两个图形求交集
+
+    像素级别的碰撞检测适用于任意图形，但性能不高，可以采用包围盒方式检测求出相交矩形区域，仅仅检测该矩形区域像素来优化性能, 后面将对该方法进行优化
   </pre>
   <p></p>
-  <canvas id="stage" width="600" height="400" style="border: 1px solid red; margin: 20px"></canvas>
+  <canvas id="stage" width="400" height="300" style="border: 1px solid red; margin: 20px"></canvas>
   <script src="raf.js"></script>
   <script src="vector2.js"></script>
   <script src="resource.js"></script>
@@ -29,13 +35,22 @@
   var ARC = Math.PI / 180;
   var fillColor = 'blue';
   var lastTime = 0;
-  var rect1, rect2, ticker;
+  var obj1, obj2, ticker;
 
   window.onload = init;
 
   function init() {
-    rect1 = new Rect( new Vector2(100, 100), new Vector2(50, 80), 50 );
-    rect2 = new Rect( new Vector2(180, 100), new Vector2(40, 80), -30 );
+    obj1 = new Rect( new Vector2(100, 100), new Vector2(50, 80), 50 );
+    // obj2 = new Rect( new Vector2(180, 100), new Vector2(40, 80), -210 );
+    obj2 = new Polygon(
+      new Vector2(180, 100),
+      new Vector2(-30, 10),
+      new Vector2(100, -60),
+      new Vector2(100, 40),
+      new Vector2(50, 60),
+      new Vector2(-30, 40),
+      0
+    );
     ticker = window.requestAnimationFrame(rendering);
   }
 
@@ -43,24 +58,25 @@
     var t = lastTime ? ts - lastTime : 0;
     lastTime = ts;
     ctx.clearRect(0, 0, canvas.width + 1, canvas.height + 1);
-    rect1.update(t);
-    rect2.update(t * 1.1);
-    fillColor = testCollision() ? 'red' : 'blue';
-    rect1.draw(ctx);
-    rect2.draw(ctx);
+    obj1.update(t);
+    obj2.update(t * 1.1);
+    var collied = testCollision();
+    fillColor = collied ? 'red' : 'blue';
+    obj1.draw(ctx);
+    obj2.draw(ctx);
     window.requestAnimationFrame(rendering);
   }
 
   function testCollision() {
     hitCtx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.globalComposition = 'source-atop';
-    rect1.draw(hitCtx, '#ffffff');
-    rect2.draw(hitCtx, '#ffffff');
-    ctx.restore();
+    obj1.draw(hitCtx, '#ff0000');
+    hitCtx.save();
+    hitCtx.globalCompositeOperation = 'source-in';
+    obj2.draw(hitCtx, '#ff0000');
+    hitCtx.restore();
     var imgdata = hitCtx.getImageData(0, 0, canvas.width, canvas.height).data;
     for (var i = 0, l = imgdata.length; i < l; i += 4) {
-      if (imgdata[i] > 0 || imgdata[i + 1] > 0 || imgdata[i + 2] > 0) {
+      if (imgdata[i + 3] > 0) {
         return true;
       }
     }
@@ -78,12 +94,47 @@
     this.deg += ARC * ts / 10;
   };
 
-  Rect.prototype.draw = function(ctx, fillStyle) {
-    ctx.save();
+  Rect.prototype.render = function(ctx, fillStyle) {
     ctx.fillStyle = fillStyle || fillColor;
     ctx.translate(this.pos.x, this.pos.y);
     ctx.rotate(this.deg);
     ctx.fillRect(-this.size.x / 2, -this.size.y / 2, this.size.x, this.size.y);
+  };
+
+  Rect.prototype.draw = function(ctx, fillStyle) {
+    ctx.save();
+    this.render(ctx, fillStyle);
+    ctx.restore();
+  };
+
+
+  function Polygon(/*point1,ponit2,...,deg*/) {
+    var args = Array.prototype.slice.call(arguments);
+    this.pos = args.shift();
+    this.deg = args.pop();
+    this.rot = ARC;
+    this.points = args;
+  }
+
+  Polygon.prototype.update = function(ts) {
+    this.deg += ARC * ts / 10;
+  };
+
+  Polygon.prototype.render = function(ctx, fillStyle) {
+    ctx.fillStyle = fillStyle || fillColor;
+    ctx.translate(this.pos.x, this.pos.y);
+    ctx.rotate(this.deg);
+    ctx.beginPath();
+    this.points.forEach(function(point) {
+      ctx.lineTo(point.x, point.y);
+    });
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  Polygon.prototype.draw = function(ctx, fillStyle) {
+    ctx.save();
+    this.render(ctx, fillStyle);
     ctx.restore();
   };
   </script>

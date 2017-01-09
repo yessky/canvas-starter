@@ -43,12 +43,11 @@
     obj1 = new Rect( new Vector2(100, 100), new Vector2(50, 80), 50 );
     // obj2 = new Rect( new Vector2(180, 100), new Vector2(40, 80), -210 );
     obj2 = new Polygon(
-      new Vector2(180, 100),
-      new Vector2(-30, 10),
-      new Vector2(100, -60),
-      new Vector2(100, 40),
-      new Vector2(50, 60),
-      new Vector2(-30, 40),
+      new Vector2(140, 110),
+      new Vector2(270, 50),
+      new Vector2(270, 140),
+      new Vector2(220, 160),
+      new Vector2(140, 140),
       0
     );
     ticker = window.requestAnimationFrame(rendering);
@@ -110,10 +109,18 @@
 
   function Polygon(/*point1,ponit2,...,deg*/) {
     var args = Array.prototype.slice.call(arguments);
-    this.pos = args.shift();
     this.deg = args.pop();
     this.rot = ARC;
     this.points = args;
+    // 计算多边形重心
+    var x = 0;
+    var y = 0;
+    var len = args.length;
+    this.points.forEach(function(point) {
+      x += point.x;
+      y += point.y;
+    });
+    this.centerPoint = new Vector2(x / len, y / len);
   }
 
   Polygon.prototype.update = function(ts) {
@@ -121,12 +128,13 @@
   };
 
   Polygon.prototype.render = function(ctx, fillStyle) {
+    var c = this.centerPoint;
     ctx.fillStyle = fillStyle || fillColor;
-    ctx.translate(this.pos.x, this.pos.y);
+    ctx.translate(c.x, c.y);
     ctx.rotate(this.deg);
     ctx.beginPath();
     this.points.forEach(function(point) {
-      ctx.lineTo(point.x, point.y);
+      ctx.lineTo(point.x - c.x, point.y - c.y);
     });
     ctx.closePath();
     ctx.fill();

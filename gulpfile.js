@@ -8,13 +8,16 @@ var isEnded = false;
 
 gulp.task('default', function(cb) {
 	var counter = 0;
+	var titleMap = {};
 	gulp.src([
-		// 'index.tpl',
 		'./test-*.html'
-	], {read: false})
+	])
 	.pipe(through2.obj(function(file, enc, done) {
-		this.push(file);
+		var name = file.path.match(/test-(\d+)\.html$/);
+		var title = (file.contents + '').match(/<title>([^<]+)<\/title>/);
+		titleMap[name[1]] = title[1];
 		counter++;
+		this.push(file);
 		done();
 	}))
 	.pipe(gulp.dest('./'))
@@ -25,10 +28,13 @@ gulp.task('default', function(cb) {
 			.pipe(through2.obj(function(file, enc, done) {
 				var tpl = file.contents + '';
 				var content = '';
-				for (var i = 1; i <= counter; ++i) {
-					var idx = i < 10 ? '0' + i : i;
-					content += '\n\t<p><a href="test-' + idx + '.html" target="_blank">Chapter ' + idx + '</a></p>';
-				}
+				var keys = Object.keys(titleMap);
+				keys.sort(function(a, b) {
+					return Number(a) > Number(b) ? 1 : -1;
+				});
+				keys.forEach(function(idx) {
+					content += '\n\t<p><a href="test-' + idx + '.html" target="_blank">Chapter ' + idx + ': ' + titleMap[idx] + '</a></p>';
+				});
 				content += '\n';
 				file.path = file.path.replace('.tpl', '.html');
 				file.contents = new Buffer(tpl.replace('$$CONTENT$$', content));

@@ -1,0 +1,35 @@
+{
+  "name": "canvas-starter",
+  "version": "1.0.0",
+  "description": "a canvas and canvas game starter guides",
+  "main": "null",
+  "scripts": {
+    "test": "null"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yessky/canvas-starter.git"
+  },
+  "keywords": [
+    "canvas",
+    "game",
+    "starter",
+    "engine",
+    "guide",
+    "html5",
+    "js"
+  ],
+  "author": "aaron.xiao <admin@veryos.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yessky/canvas-starter/issues"
+  },
+  "homepage": "https://github.com/yessky/canvas-starter#readme",
+  "devDependencies": {
+    "del": "^2.2.2",
+    "gulp": "^3.9.1",
+    "gutil": "^1.6.4",
+    "run-sequence": "^1.2.2",
+    "through2": "^2.0.3"
+  }
+}

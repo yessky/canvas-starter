@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-26 - 求解多边形重心</title>
+  <style type="text/css">
+  * {margin: 0; padding: 0}
+  </style>
+</head>
+
+<body>
+  <pre>
+    求解多边形重心
+
+      以重心作为多边形旋转的原点，求解方法为将多边形分解为多个三角形，求出三角形的中心，根据天平原理求解两个三角形组合体的中心，采用归纳法逐步解出重心坐标
+  </pre>
+  <p></p>
+  <canvas id="stage" width="400" height="300" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="raf.js"></script>
+  <script src="vector2.js"></script>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var PI2 = Math.PI * 2;
+  var ARC = Math.PI / 180;
+  var fillColor = 'blue';
+  var lastTime = 0;
+  var obj1, obj2, ticker;
+
+  window.onload = init;
+
+  function init() {
+    obj2 = new Polygon(
+      new Vector2(140, 110),
+      new Vector2(270, 50),
+      new Vector2(270, 140),
+      new Vector2(220, 160),
+      new Vector2(140, 140),
+      0
+    );
+    ticker = window.requestAnimationFrame(rendering);
+  }
+
+  function rendering(ts) {
+    var t = lastTime ? ts - lastTime : 0;
+    lastTime = ts;
+    ctx.clearRect(0, 0, canvas.width + 1, canvas.height + 1);
+    obj2.update(t * 1.1);
+    obj2.draw(ctx);
+    window.requestAnimationFrame(rendering);
+  }
+
+  function Polygon(/*point1,ponit2,...,deg*/) {
+    var args = Array.prototype.slice.call(arguments);
+    this.deg = args.pop();
+    this.rot = ARC;
+    this.points = args;
+    // 计算多边形重心
+    var x = 0;
+    var y = 0;
+    var len = args.length;
+    this.points.forEach(function(point) {
+      x += point.x;
+      y += point.y;
+    });
+    this.centerPoint = new Vector2(x / len, y / len);
+    this.centerPoint = getPolygonGravity(this.points);
+  }
+
+  Polygon.prototype.update = function(ts) {
+    this.deg += ARC * ts / 10;
+  };
+
+  Polygon.prototype.render = function(ctx, fillStyle) {
+    var c = this.centerPoint;
+    ctx.fillStyle = fillStyle || fillColor;
+    ctx.translate(c.x, c.y);
+    ctx.rotate(this.deg);
+    ctx.beginPath();
+    this.points.forEach(function(point) {
+      ctx.lineTo(point.x - c.x, point.y - c.y);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, PI2);
+    ctx.closePath();
+    ctx.fillStyle = 'red';
+    ctx.fill();
+  };
+
+  Polygon.prototype.draw = function(ctx, fillStyle) {
+    ctx.save();
+    this.render(ctx, fillStyle);
+    ctx.restore();
+  };
+
+  // 计算多边形的重心
+  function getPolygonGravity(points) {
+    var sumx = 0;
+    var sumy = 0;
+    var mass = 0;
+    var p0 = points[0];
+    for (var i = 1, l = points.length - 1; i < l; ++i) {
+      var m = getTriangleArea(p0, points[i], points[i + 1]);
+      var p = getTriangleGravity(p0, points[i], points[i + 1]);
+      mass += m;
+      sumx += p.x * m;
+      sumy += p.y * m;
+    }
+    return new Vector2(sumx / mass, sumy / mass);
+  }
+
+  // 计算三角形重心 假设质量均匀 则图心即为重心
+  function getTriangleGravity(p0, p1, p2) {
+    return new Vector2((p0.x + p1.x + p2.x) / 3, (p0.y + p1.y + p2.y) / 3);
+  }
+
+  // 计算三角形面积 (向量叉乘的几何意义：以两向量作为邻边的平行四边形面积，三角形面积为其1/2)
+  function getTriangleArea(p0, p1, p2) {
+    var va = p1.sub(p0);
+    var vb = p2.sub(p0);
+    return (va.x * vb.y - va.y * vb.x) / 2;
+  }
+  </script>
+</body>
+
+</html>

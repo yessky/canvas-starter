@@ -16,7 +16,6 @@ gulp.task('default', function(cb) {
 		this.push(file);
 		counter++;
 		done();
-		console.log(file.path)
 	}))
 	.pipe(gulp.dest('./'))
 	.on('end', onReady);

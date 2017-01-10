@@ -31,6 +31,11 @@ Vector2.prototype = {
   normalize: function() {
     var l = this.modulus();
     return new Vector2(this.x / l, this.y / l);
+  },
+  rotate: function(theta) {
+    var x = this.x * Math.cos(theta) + this.y * Math.sin(theta);
+    var y = this.y * Math.cos(theta) - this.x * Math.sin(theta);
+    return new Vector2(x, y);
   }
 };
 Vector2.sub = function(a, b) {

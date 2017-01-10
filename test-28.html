@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-28 - 实现圆角矩形/虚线/箭头</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  </style>
+</head>
+
+<body>
+  <pre></pre>
+  <p></p>
+  <canvas id="stage" width="640" height="480" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="raf.js"></script>
+  <script src="vector2.js"></script>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  var bbox = canvas.getBoundingClientRect();
+  var PI2 = Math.PI * 2;
+  var ARC = Math.PI / 180;
+  var DEG = 180 / Math.PI;
+  var centerX = canvasWidth / 2;
+  var centerY = canvasHeight / 2;
+
+  window.onload = rendering;
+
+  function rendering(disableLight) {
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    
+    // draw rounded react 5px arc
+    drawRoundRect(20, 20, 80, 60, 5);
+    ctx.stroke();
+
+    // draw rounded react 10px arc
+    ctx.save();
+    drawRoundRect(120, 20, 80, 60, 10);
+    ctx.fillStyle = 'rgba(255,0,0,.5)';
+    ctx.fill();
+    ctx.restore();
+
+    // draw dash line
+    ctx.save();
+    ctx.beginPath();
+    ctx.strokeStyle = 'red';
+    ctx.moveTo(220, 10);
+    ctx.lineTo(600, 10);
+    ctx.closePath();
+    ctx.stroke();
+    drawDashLine(220, 20, 600, 20, 10, 3); // #1
+    drawDashLine(220, 30, 600, 30, 10, 4); // # 2
+    drawDashLine(220, 40, 600, 40, 10, 5); // #3
+    drawDashLine(220, 50, 600, 50, 10, 6); // #4
+    drawDashLine(220, 60, 600, 60, 10, 7); // #5
+    drawDashLine(220, 70, 600, 70, 10, 8); // #6
+    drawDashLine(220, 80, 600, 80, 10, 9); // #7
+    drawDashLine(220, 90, 600, 90, 20, 10); // #8
+    drawDashLine(20, 100, 400, 200, 20, 10); // #9
+    drawDashLine(20, 200, 200, 100); // #10
+    drawDashLine(50, 200, 210, 100, 10, 5); // #11
+    drawDashLine(300, 100, 300, 200); // #12
+    ctx.restore();
+
+    // draw dash rect
+    drawDashRect(400, 100, 100, 60);
+    drawDashRect(520, 100, 90, 120);
+
+    // draw line with arrow
+    drawArrowLine(20, 220, 300, 300, 10, 36);
+    drawArrowLine(20, 320, 300, 360, 10, 30);
+    drawArrowLine(350, 220, 350, 360, 10, 26);
+    drawArrowLine(400, 360, 400, 220, 10, 26);
+  }
+
+  function drawRoundRect(x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.closePath();
+  }
+
+  function drawDashLine(fromX, fromY, toX, toY, dashSize, dashGap) {
+    // normalize arguments
+    dashSize = dashSize || 5;
+    dashGap = dashGap || 3;
+
+    var deltaX = toX - fromX;
+    var deltaY = toY - fromY;
+    var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    var cosa = deltaX / distance;
+    var sina = deltaY / distance;
+    var dashStep = dashSize + dashGap;
+    var len = (distance / dashStep) << 0;
+    var rest = distance % dashStep;
+    var curX = fromX;
+    var curY = fromY;
+    var fixup = 0;
+    var fixstart = true;
+    var fixend = true;
+
+    // ensure the line start and end with line instead of gap
+    if (rest === 0) {
+      fixup = dashSize / 2;
+      len -= 1;
+    } else if (rest > dashGap) {
+      fixup = (rest - dashGap) / 2;
+    } else {
+      fixup = rest;
+      fixstart = false;
+    }
+
+    if (fixstart) {
+      ctx.beginPath();
+      ctx.moveTo(curX, curY);
+      curX += fixup * cosa;
+      curY += fixup * sina;
+      ctx.lineTo(curX, curY);
+      ctx.closePath();
+      ctx.stroke();
+
+      curX += dashGap * cosa;
+      curY += dashGap * sina;
+    }
+
+    for (var i = 0; i < len; ++i) {
+      ctx.beginPath();
+      ctx.moveTo(curX, curY);
+      curX += dashSize * cosa;
+      curY += dashSize * sina;
+      ctx.lineTo(curX, curY);
+      ctx.closePath();
+      ctx.stroke();
+
+      curX += dashGap * cosa;
+      curY += dashGap * sina;
+    }
+
+    if (fixend) {
+      ctx.beginPath();
+      ctx.moveTo(curX, curY);
+      curX += fixup * cosa;
+      curY += fixup * sina;
+      ctx.lineTo(curX, curY);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  function drawDashRect(x, y, width, height) {
+    ctx.save();
+    ctx.strokeStyle = 'blue';
+    drawDashLine(x, y, x + width, y);
+    drawDashLine(x + width, y, x + width, y + height);
+    drawDashLine(x + width, y + height, x, y + height);
+    drawDashLine(x, y + height, x, y);
+    ctx.restore();
+  }
+
+  function drawArrowLine(fromX, fromY, toX, toY, arrowSide, arrowDeg) {
+    // apply default config
+    arrowSide = arrowSide || 10;
+    arrowDeg = arrowDeg || 40;
+
+    var deltaX = toX - fromX;
+    var deltaY = toY - fromY;
+    var arc = -Math.atan2(deltaX, deltaY);
+    var arc1 = (arc - arrowDeg * ARC) - Math.PI / 2;
+    var arc2 = (arc + arrowDeg * ARC) - Math.PI / 2;
+    var k1 = Math.tan(arc1);
+    var k2 = Math.tan(arc2);
+    var p1x = toX - arrowSide / Math.sqrt(1 + k1 * k1);
+    var p1y = toY - arrowSide * k1 / Math.sqrt(1 + k1 * k1);
+    var p2x = toX - arrowSide / Math.sqrt(1 + k2 * k2);
+    var p2y = toY - arrowSide * k2 / Math.sqrt(1 + k2 * k2);
+
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(p1x, p1y);
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(p2x, p2y);
+    ctx.closePath();
+    ctx.stroke();
+  }
+  </script>
+</body>
+
+</html>

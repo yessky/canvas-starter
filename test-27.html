@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-27 - 实现探照灯</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  </style>
+</head>
+
+<body>
+  <pre></pre>
+  <p></p>
+  <canvas id="stage" width="640" height="480" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="raf.js"></script>
+  <script src="vector2.js"></script>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  var bbox = canvas.getBoundingClientRect();
+  var PI2 = Math.PI * 2;
+  var centerX = canvasWidth / 2;
+  var centerY = canvasHeight / 2;
+  var images = null;
+
+  window.onload = function() {
+    loader.load({
+      scence: 'images/scence.jpg'
+    }, init);
+  };
+
+  function init(resources) {
+    images = resources;
+    rendering();
+    canvas.addEventListener('mouseout', function() {
+      canvas.style.cursor = 'default';
+      rendering(true);
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      canvas.style.cursor = 'none';
+      centerX = e.clientX - bbox.left;
+      centerY = e.clientY - bbox.top;
+      if (centerX < 100) {
+        centerX = 100;
+      }
+      if (centerX + 100 > canvasWidth) {
+        centerX = canvasWidth - 100;
+      }
+      if (centerY < 100) {
+        centerY = 100;
+      }
+      if (centerY + 100 > canvasHeight) {
+        centerY = canvasHeight - 100;
+      }
+      rendering();
+    });
+  }
+
+  function rendering(disableLight) {
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    drawMaskLayer();
+    if (!disableLight) {
+      drawSearchLight(centerX, centerY);
+    }
+  }
+
+  function drawMaskLayer() {
+    ctx.save();
+    ctx.drawImage(images.scence, 0, 0);
+    ctx.fillStyle = 'rgba(0,0,0,.75)';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    ctx.restore();
+  }
+
+  function drawSearchLight(x, y) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 100, 0, PI2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(images.scence, 0, 0);
+    ctx.restore();
+
+    // ctx.save();
+    // ctx.beginPath();
+    // ctx.arc(x, y, 100, 0, PI2);
+    // ctx.closePath();
+    // ctx.lineWidth = 4;
+    // ctx.strokeStyle = 'red';
+    // ctx.stroke();
+    // ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 100, 0, PI2);
+    ctx.closePath();
+    var gr = ctx.createRadialGradient(x, y, 80, x, y, 100);
+    gr.addColorStop(0.2, 'rgba(0,0,0,0)');
+    gr.addColorStop(0.9, 'rgba(0,0,0,.6)');
+    ctx.fillStyle = gr;
+    ctx.fill();
+  }
+  </script>
+</body>
+
+</html>

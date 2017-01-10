@@ -65,6 +65,25 @@
   ctx.fill();
   ctx.restore();
 
+  ctx.save();
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = 'rgba(255,0,0,1)';
+  ctx.fillRect(330, 120, 80, 80);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 3;
+  ctx.shadowColor = 'rgba(0,0,0,.5)';
+  ctx.shadowBlur = 5;
+  ctx.font = '28px Arial';
+  ctx.fillStyle = 'rgba(0,0,0,1)';
+  ctx.fillText('Blur Canvas', 430, 160);
+  ctx.restore();
+
   drawPoint(100, 240);
   fillPentagram(100, 240, 50);
   drawCoordinateSystem(100, 240);

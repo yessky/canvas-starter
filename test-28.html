@@ -49,35 +49,31 @@
 
     // draw dash line
     ctx.save();
-    ctx.beginPath();
     ctx.strokeStyle = 'red';
-    ctx.moveTo(220, 13);
-    ctx.lineTo(600, 13);
-    ctx.closePath();
-    ctx.stroke();
-    drawDashLine(220, 20, 600, 20, 10, 3); // #1
-    drawDashLine(220, 30, 600, 30, 10, 4); // # 2
-    drawDashLine(220, 40, 600, 40, 10, 5); // #3
-    drawDashLine(220, 50, 600, 50, 10, 6); // #4
-    drawDashLine(220, 60, 600, 60, 10, 7); // #5
-    drawDashLine(220, 70, 600, 70, 10, 8); // #6
-    drawDashLine(220, 80, 600, 80, 10, 9); // #7
-    drawDashLine(220, 90, 600, 90, 20, 10); // #8
-    drawDashLine(20, 100, 400, 200, 20, 10); // #9
-    drawDashLine(20, 200, 200, 100); // #10
-    drawDashLine(50, 200, 210, 100, 10, 5); // #11
-    drawDashLine(300, 100, 300, 200); // #12
-    drawDashLine(220, 6, 600, 6, 10, 3); // #13
+    drawDashLine(220, 20, 600, 20, 380); // #0
+    drawDashLine(220, 40, 600, 40, 10, 3); // #1
+    drawDashLine(220, 50, 600, 50, 10, 4); // # 2
+    drawDashLine(220, 60, 600, 60, 10, 5); // #3
+    drawDashLine(220, 70, 600, 70, 10, 6); // #4
+    drawDashLine(220, 80, 600, 80, 10, 7); // #5
+    drawDashLine(220, 90, 600, 90, 10, 8); // #6
+    drawDashLine(220, 100, 600, 100, 10, 9); // #7
+    drawDashLine(220, 110, 600, 110, 20, 10); // #8
+    drawDashLine(20, 130, 400, 230, 20, 10); // #9
+    drawDashLine(20, 230, 200, 130); // #10
+    drawDashLine(50, 240, 210, 140, 10, 5); // #11
+    drawDashLine(300, 130, 300, 230); // #12
+    drawDashLine(220, 30, 600, 30, 10, 3); // #13
     ctx.restore();
 
     // draw dash rect
-    drawDashRect(400, 100, 100, 60);
-    drawDashRect(520, 100, 90, 120);
+    drawDashRect(400, 140, 100, 60);
+    drawDashRect(520, 140, 90, 120);
 
     // // draw line with arrow
     drawArrowLine(50, 260, 120, 360, 10, 36);
     drawArrowLine(50, 360, 120, 260, 10, 36);
-    drawArrowLine(170, 250, 170, 360, 10);
+    drawArrowLine(170, 250, 175, 360, 10);
     drawArrowLine(200, 360, 200, 250, 10);
     drawArrowLine(350, 250, 250, 360, 15, 70);
     drawArrowLine(350, 360, 250, 250, 15, 100);
@@ -128,41 +124,36 @@
       fixstart = false;
     }
 
+    ctx.beginPath();
+
     if (fixstart) {
-      ctx.beginPath();
       ctx.moveTo(curX, curY);
       curX += fixup * cosa;
       curY += fixup * sina;
       ctx.lineTo(curX, curY);
-      ctx.closePath();
-      ctx.stroke();
 
       curX += dashGap * cosa;
       curY += dashGap * sina;
     }
 
     for (var i = 0; i < len; ++i) {
-      ctx.beginPath();
       ctx.moveTo(curX, curY);
       curX += dashSize * cosa;
       curY += dashSize * sina;
       ctx.lineTo(curX, curY);
-      ctx.closePath();
-      ctx.stroke();
 
       curX += dashGap * cosa;
       curY += dashGap * sina;
     }
 
     if (fixend) {
-      ctx.beginPath();
       ctx.moveTo(curX, curY);
       curX += fixup * cosa;
       curY += fixup * sina;
       ctx.lineTo(curX, curY);
-      ctx.closePath();
-      ctx.stroke();
     }
+
+    ctx.stroke();
   }
 
   function drawDashRect(x, y, width, height) {
@@ -175,35 +166,9 @@
     ctx.restore();
   }
 
-  function drawArrowLine2(fromX, fromY, toX, toY, arrowSide, arrowDeg) {
-    // apply default config
-    arrowSide = arrowSide || 10;
-    arrowDeg = arrowDeg || 40;
-
-    var deltaX = toX - fromX;
-    var deltaY = toY - fromY;
-    var arc = Math.atan2(deltaY, deltaX);
-    var sina = Math.sin(arrowDeg * ARC / 2);
-    var cosa = Math.cos(arrowDeg * ARC / 2);
-
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.lineTo(toX, toY);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.save();
-    ctx.translate(toX, toY);
-    ctx.rotate(arc);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-arrowSide * cosa, -arrowSide * sina);
-    ctx.moveTo(0, 0);
-    ctx.lineTo(-arrowSide * cosa, arrowSide * sina);
-    ctx.closePath();
-    ctx.restore();
-    ctx.stroke();
-  }
-
+  // 方法1: 如果以直线作为一个坐标系的x轴（可理解为将直线旋转为canvas的原始坐标系） 则箭头的两侧相当于绕x轴旋转相应的角度
+  // 因此分别减去箭头两侧的向量投影到对应坐标轴上的分量即为对应箭头终点的坐标
+  // 该方法调用ctx api较少，没有开根、大量除法计算
   function drawArrowLine(fromX, fromY, toX, toY, arrowSide, arrowDeg) {
     // apply default config
     arrowSide = arrowSide || 10;
@@ -219,6 +184,67 @@
     var p1y = toY - arrowSide * Math.sin(arc1);
     var p2x = toX - arrowSide * Math.cos(arc2);
     var p2y = toY - arrowSide * Math.sin(arc2);
+
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(p1x, p1y);
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(p2x, p2y);
+    ctx.stroke();
+  }
+
+  // 方法2: 如果以直线作为坐标轴，那么平移旋转坐标轴后，箭头的两侧相当于顺时针、逆时针旋转相应的角度
+  // 该方法简单容易理解，没有复杂的计算， 缺点是调用较多的ctx api
+  function drawArrowLine2(fromX, fromY, toX, toY, arrowSide, arrowDeg) {
+    // apply default config
+    arrowSide = arrowSide || 10;
+    arrowDeg = arrowDeg || 40;
+
+    var deltaX = toX - fromX;
+    var deltaY = toY - fromY;
+    var arc = Math.atan2(deltaY, deltaX);
+    var sina = Math.sin(arrowDeg * ARC / 2);
+    var cosa = Math.cos(arrowDeg * ARC / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(toX, toY);
+    ctx.rotate(arc);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-arrowSide * cosa, -arrowSide * sina);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-arrowSide * cosa, arrowSide * sina);
+    ctx.restore();
+    ctx.stroke();
+  }
+
+  // 方法3: 理由已知直线的角度，分别顺、逆时针旋转对应的角度，可取得箭头两侧对应直线的斜率
+  // 已知直线斜率，直线上一点坐标p(x,y)以及点p'距点p的距离，求点p'的坐标就很简单了
+  // 该方法调用ctx api 较少，但涉及到两侧开根计算且存在平行于y轴的情况，需要额外处理，不推荐该方法
+  function drawArrowLine3(fromX, fromY, toX, toY, arrowSide, arrowDeg) {
+    // apply default config
+    arrowSide = arrowSide || 10;
+    arrowDeg = arrowDeg || 40;
+
+    var deltaX = toX - fromX;
+    var deltaY = toY - fromY;
+    var arc = Math.atan2(deltaY, deltaX);
+    var arcv = Math.PI / 2;
+    var arc1 = arc - arrowDeg * ARC / 2;
+    var arc2 = arc + arrowDeg * ARC / 2;
+    var r1 = Math.abs(arc1) > arcv ? -1 : 1; // 如果角度不在－90 ~ 90间，需要调整方向
+    var r2 = Math.abs(arc2) > arcv ? -1 : 1;
+    var k1 = Math.tan(arc1);
+    var k2 = Math.tan(arc2);
+    var p1x = toX - arrowSide / Math.sqrt(1 + k1 * k1) * r1;
+    var p1y = toY - arrowSide * k1 / Math.sqrt(1 + k1 * k1) * r1;
+    var p2x = toX - arrowSide / Math.sqrt(1 + k2 * k2) * r2;
+    var p2y = toY - arrowSide * k2 / Math.sqrt(1 + k2 * k2) * r2;
 
     ctx.beginPath();
     ctx.moveTo(fromX, fromY);

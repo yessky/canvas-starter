@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-30 - 绘制椭圆/虚线椭圆(弧)</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  pre {
+    padding: 10px 0
+  }
+  </style>
+</head>
+
+<body>
+  <pre>
+    绘制椭圆/虚线椭圆(弧)
+
+      (虚线)椭圆弧的绘制本文并未列出代码，计算需要考虑端点(可参照test-28圆端点的计算方法)，思路大致有：
+
+        1. 利用椭圆的标准参数方程根据弧度求出对应坐标，用lineTo连接这些坐标
+
+        2. 利用缩放(又称面积均匀压缩)，用绘制圆弧的方法绘制出圆弧，被自动缩放为椭圆
+  </pre>
+  <p></p>
+  <canvas id="stage" width="640" height="480" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="raf.js"></script>
+  <script src="vector2.js"></script>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  var bbox = canvas.getBoundingClientRect();
+  var PI2 = Math.PI * 2;
+  var ARC = Math.PI / 180;
+  var DEG = 180 / Math.PI;
+  var centerX = canvasWidth / 2;
+  var centerY = canvasHeight / 2;
+
+  window.onload = rendering;
+
+  function rendering(disableLight) {
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+
+    if (ctx.ellipse) {
+      ctx.beginPath();
+      ctx.ellipse(100, 360, 80, 60, 0, 0, PI2, true);
+      ctx.stroke();
+    }
+
+    // drawEllipse #1
+    drawEllipse(100, 80, 160, 120);
+    ctx.save();
+    ctx.lineWidth = 4;
+    drawEllipse(180, 80, 160, 100);
+    ctx.restore();
+    drawEllipse(260, 80, 160, 100);
+    ctx.save();
+    ctx.lineWidth = 8;
+    drawEllipse(340, 80, 160, 80);
+    ctx.restore();
+    drawEllipse(400, 80, 160, 80);
+    ctx.save();
+    ctx.lineWidth = 15;
+    drawEllipse(460, 80, 160, 60);
+    ctx.restore();
+
+    // drawEllipse #2
+    drawEllipse(100, 220, 160, 120);
+    ctx.save();
+    ctx.lineWidth = 4;
+    drawEllipse(180, 220, 160, 100);
+    ctx.restore();
+    drawEllipse(260, 220, 160, 100);
+    ctx.save();
+    ctx.lineWidth = 8;
+    drawEllipse(340, 220, 160, 80);
+    ctx.restore();
+    drawEllipse(400, 220, 160, 80);
+    ctx.save();
+    ctx.lineWidth = 15;
+    drawEllipse(460, 220, 160, 60);
+    ctx.restore();
+
+    // drawEllipse #3
+    drawEllipse3(180, 360, 160, 120, 0);
+    ctx.save();
+    ctx.lineWidth = 4;
+    drawEllipse3(260, 360, 160, 120, Math.PI / 6);
+    ctx.restore();
+    ctx.save();
+    ctx.lineWidth = 8;
+    drawEllipse3(340, 360, 160, 120, Math.PI / 4);
+    ctx.restore();
+    ctx.save();
+    ctx.lineWidth = 15;
+    drawEllipse3(400, 360, 160, 120, Math.PI * 2 / 3);
+    ctx.restore();
+  }
+
+  function drawEllipse(x, y, w, h) {
+    w /= 2;
+    h /= 2;
+    var k = .5522848;
+    var ox = w * k; // 水平控制点偏移量 
+    var oy = h * k; // 垂直控制点偏移量 
+    ctx.beginPath();
+    ctx.moveTo(x - w, y);
+    ctx.bezierCurveTo(x - w, y - oy, x - ox, y - h, x, y - h);
+    ctx.bezierCurveTo(x + ox, y - h, x + w, y - oy, x + w, y);
+    ctx.bezierCurveTo(x + w, y + oy, x + ox, y + h, x, y + h);
+    ctx.bezierCurveTo(x - ox, y + h, x - w, y + oy, x - w, y);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawEllipse2(x, y, w, h) {
+    w /= 2;
+    h /= 2;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(w, h);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, PI2);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawEllipse3(x, y, w, h, rotation) {
+    w /= 2;
+    h /= 2;
+
+    var width_two_thirds = w * 4 / 3;
+
+    var dx1 = Math.sin(rotation) * h;
+    var dy1 = Math.cos(rotation) * h;
+    var dx2 = Math.cos(rotation) * width_two_thirds;
+    var dy2 = Math.sin(rotation) * width_two_thirds;
+
+    var topCenterX = x - dx1;
+    var topCenterY = y + dy1;
+    var topRightX = topCenterX + dx2;
+    var topRightY = topCenterY + dy2;
+    var topLeftX = topCenterX - dx2;
+    var topLeftY = topCenterY - dy2;
+
+    var bottomCenterX = x + dx1;
+    var bottomCenterY = y - dy1;
+    var bottomRightX = bottomCenterX + dx2;
+    var bottomRightY = bottomCenterY + dy2;
+    var bottomLeftX = bottomCenterX - dx2;
+    var bottomLeftY = bottomCenterY - dy2;
+
+    ctx.beginPath();
+    ctx.moveTo(bottomCenterX, bottomCenterY);
+    ctx.bezierCurveTo(bottomRightX, bottomRightY, topRightX, topRightY, topCenterX, topCenterY);
+    ctx.bezierCurveTo(topLeftX, topLeftY, bottomLeftX, bottomLeftY, bottomCenterX, bottomCenterY);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawDashEllipse(x, y, w, h, arcSize, arcGap) {
+    // toto
+  }
+
+  function drawDashEllipseArc() {
+    // todo
+  }
+  </script>
+</body>
+
+</html>

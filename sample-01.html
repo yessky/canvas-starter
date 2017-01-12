@@ -24,7 +24,12 @@
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
 
-  
+  var AABB = Sketch.declare('Sketch.AABB', Sketch.Size, {
+    constructor: function(w, h, x, y) {
+      this.x = x;
+      this.y = y;
+    }
+  });
   </script>
 </body>
 

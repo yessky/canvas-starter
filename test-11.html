@@ -4,8 +4,14 @@
 <head>
   <title>canvas test-11 - ctx.createRadialGradient径向渐变</title>
   <style type="text/css">
-  * {margin: 0; padding: 0}
-  pre {padding: 10px 0}
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  pre {
+    padding: 10px 0
+  }
   </style>
 </head>
 
@@ -70,14 +76,14 @@
   ctx.stroke();
 
   // 渐变圆2包含渐变圆1
-  
+
   var rg2 = ctx.createRadialGradient(330, 130, 20, 340, 120, 50);
   rg2.addColorStop(0, 'red');
   rg2.addColorStop(0.9, 'green');
   rg2.addColorStop(1, 'orange');
 
   ctx.beginPath();
-  ctx.fillStyle =  rg2;
+  ctx.fillStyle = rg2;
   ctx.rect(270, 50, 160, 160);
   ctx.fill();
   ctx.stroke();

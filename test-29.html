@@ -8,6 +8,10 @@
     margin: 0;
     padding: 0
   }
+  
+  pre {
+    padding: 10px 0
+  }
   </style>
 </head>
 
@@ -37,7 +41,7 @@
 
   function rendering(disableLight) {
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
-    
+
     // dash arrow line
     drawDashArrowLine(20, 70, 100, 70);
     drawDashArrowLine(180, 70, 110, 70);
@@ -53,11 +57,11 @@
     // draw dash circle/arc
     drawDashArc(120, 220, 100, 0, 360);
     ctx.beginPath();
-    ctx.arc(120, 220, 90, 0,  PI2);
+    ctx.arc(120, 220, 90, 0, PI2);
     ctx.stroke();
     drawDashArc(120, 220, 80, 0, 270, false, 10, 4);
     ctx.beginPath();
-    ctx.arc(120, 220, 70, 0,  Math.PI * 3 / 2);
+    ctx.arc(120, 220, 70, 0, Math.PI * 3 / 2);
     ctx.stroke();
     drawDashArc(120, 220, 60, 0, 270, true, 10, 5);
     ctx.beginPath();

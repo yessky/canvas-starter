@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas test-31 - 高级loading动画</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  pre {
+    padding: 10px 0
+  }
+  </style>
+</head>
+
+<body>
+  <pre></pre>
+  <p></p>
+  <canvas id="stage" width="400" height="400" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="raf.js"></script>
+  <script src="vector2.js"></script>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var canvasWidth = canvas.width;
+  var canvasHeight = canvas.height;
+  var centerX = canvasWidth / 2;
+  var centerY = canvasHeight / 2;
+  var bbox = canvas.getBoundingClientRect();
+  var ARC = Math.PI / 180;
+  var ARC1 = ARC * 90;
+  var ARC2 = ARC * 180;
+  var ARC3 = ARC * 270;
+  var ARC4 = ARC * 360;
+  var DEG = 180 / Math.PI;
+  var radius = 100;
+
+  // 弧
+  var arc = {
+    pos: ARC3,
+    radius: radius,
+    speed: ARC,
+    acceler: ARC / 10, // 加速度
+    round: 0
+  };
+  // 点
+  var spot = {
+    angle: 0,
+    radius: 5
+  };
+
+  window.onload = rendering;
+
+  function rendering(disableLight) {
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+
+    drawBackground();
+    drawArc();
+    drawSpot();
+  }
+
+  function drawBackground() {
+    var size = 56;
+    var text = 'MIGU';
+    ctx.save();
+    ctx.strokeStyle = 'red';
+    ctx.fillStyle = 'red';
+    ctx.lineWidth = 10;
+    ctx.font = 'bold ' + size + 'px Arial';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, ARC4);
+    ctx.closePath();
+    ctx.stroke();
+    var offset = ctx.measureText(text).width / 2;
+    ctx.fillText(text, canvasCenter.x - offset, canvasCenter.y + size * .4);
+    ctx.restore();
+  }
+
+  function drawArc() {
+    // ctx.save();
+    // ctx.strokeStyle = 'white';
+    // ctx.beginPath();
+    // ctx.arc(spot.pos.x, spot.pos.y, spot.radius, 0, ARC4);
+    // ctx.closePath();
+    // ctx.fill();
+    // ctx.restore();
+  }
+
+  function drawSpot() {
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    ctx.translate(spot.pos.x, spot.pos.y);
+    ctx.rotate(spot.angle);
+    ctx.arc(0, 0, spot.radius, 0, ARC4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  </script>
+</body>
+
+</html>

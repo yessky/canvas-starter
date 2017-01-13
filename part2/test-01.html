@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas sample-01</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  pre {
+    padding: 10px 0
+  }
+  </style>
+</head>
+
+<body>
+  <pre></pre>
+  <p></p>
+  <canvas id="stage" width="640" height="480" style="border: 1px solid red; margin: 20px"></canvas>
+  <script src="../sketch.js/Sketch.js"></script>
+  <script src="../sketch.js/declare.js"></script>
+  <script src="../sketch.js/util.js"></script>
+  <script type="text/javascript">
+  var canvas = document.getElementById('stage');
+  var ctx = canvas.getContext('2d');
+
+  var AABB = Sketch.declare('Sketch.AABB', Sketch.Size, {
+    constructor: function(w, h, x, y) {
+      this.x = x;
+      this.y = y;
+    }
+  });
+
+  var X = {
+    id: 'X',
+    refs: null,
+    parents: null
+  };
+  var D = {
+    id: 'D',
+    refs: [X],
+    parents: [X]
+  };
+  var E = {
+    id: 'E',
+    refs: [X],
+    parents: [X]
+  };
+  var F = {
+    id: 'F',
+    refs: [X],
+    parents: [X]
+  };
+  var B = {
+    id: 'B',
+    refs: [E, D, X],
+    parents: [E, D]
+  };
+  var C = {
+    id: 'C',
+    refs: [D, F, X],
+    parents: [D, F]
+  };
+  var A = {
+    id: 'A',
+    refs: [B, E, C, D, F, X],
+    parents: [B, C]
+  };
+  var nom = 0;
+
+  function mro(bases) {
+    var root = [];
+    var sets = {};
+    for (var i = 0, l = bases.length; i < l; ++i) {
+      var base = bases[i];
+      var parents = base.parents;
+      var i = 0;
+      var len = parents.length;
+      if (!sets[base.id]) {
+        sets[base.id] = {
+          id: base.id,
+          refs: [],
+          parents: []
+        };
+      }
+      var ref = sets[base.id].refs;
+      var toplevel = {
+        name: base.id,
+        idx: 0,
+        len: parents ? parents.length : 0,
+        items: parents,
+        top: null
+      };
+      var rootlevel = toplevel;
+      ref.push(base.id);
+      while (true) {
+        // console.log(['>>>>', toplevel.name, toplevel.idx])
+        if (toplevel.idx >= toplevel.len) {
+          console.log(['#### 1', toplevel.name, !!toplevel.top])
+          if (toplevel.top) {
+            toplevel = toplevel.top;
+            ++toplevel.idx;
+            console.log(['#### 2', toplevel.name, toplevel.idx, !!toplevel.top])
+          } else if (toplevel.idx >= toplevel.len) {
+            break;
+          }
+        }
+        if (nom++ > 100) {
+          break;
+        }
+        // console.log([toplevel.name, toplevel.idx, nom])
+        var rec = toplevel.items[toplevel.idx++];
+        var curlevel = {
+          name: rec.id,
+          idx: 0,
+          len: rec.parents ? rec.parents.length : 0,
+          items: rec.parents,
+          top: toplevel
+        };
+        console.log(['####', toplevel.name, curlevel.name, curlevel.idx, curlevel.len])
+        if (curlevel.len) {
+          toplevel = curlevel;
+        } else {
+          // ++toplevel.idx;
+          console.log(['<<<<', curlevel.name, curlevel.idx, curlevel.len, toplevel.name, toplevel.idx, toplevel.len])
+        }
+
+      }
+
+      console.log(toplevel);
+    }
+  }
+  </script>
+</body>
+
+</html>

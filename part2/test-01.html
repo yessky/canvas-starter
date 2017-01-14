@@ -35,7 +35,7 @@
 
   var X = {
     id: 'X',
-    refs: null,
+    refs: [],
     parents: null
   };
   var D = {
@@ -70,14 +70,14 @@
   };
   var nom = 0;
 
-  function mro(bases) {
+  function mro1(bases) {
     var root = [];
     var sets = {};
     for (var i = 0, l = bases.length; i < l; ++i) {
       var base = bases[i];
       var parents = base.parents;
-      var i = 0;
       var len = parents.length;
+      console.log(i)
       if (!sets[base.id]) {
         sets[base.id] = {
           id: base.id,
@@ -91,46 +91,148 @@
         idx: 0,
         len: parents ? parents.length : 0,
         items: parents,
-        top: null
+        top: null,
+        refs: []
       };
-      var rootlevel = toplevel;
-      ref.push(base.id);
+      // ref.push(base.id);
       while (true) {
-        // console.log(['>>>>', toplevel.name, toplevel.idx])
-        if (toplevel.idx >= toplevel.len) {
-          console.log(['#### 1', toplevel.name, !!toplevel.top])
-          if (toplevel.top) {
-            toplevel = toplevel.top;
-            ++toplevel.idx;
-            console.log(['#### 2', toplevel.name, toplevel.idx, !!toplevel.top])
-          } else if (toplevel.idx >= toplevel.len) {
-            break;
-          }
+        if (toplevel.idx == toplevel.len) {
+        	var s = toplevel.name + ':' + toplevel.idx + ' ';
+        	// console.log(ref.join('-'))
+        	if (!toplevel.top) {
+        		break;
+        	}
+        	var curlevel = toplevel;
+        	toplevel = toplevel.top;
+        	console.log(s + 'up to ' + toplevel.name + ':' + toplevel.idx);
+        	// console.log(ref)
+        	/*if (toplevel.idx < toplevel.len) {
+        		toplevel.refs = [curlevel.refs];
+        	}*/
         }
-        if (nom++ > 100) {
-          break;
-        }
-        // console.log([toplevel.name, toplevel.idx, nom])
         var rec = toplevel.items[toplevel.idx++];
-        var curlevel = {
-          name: rec.id,
-          idx: 0,
-          len: rec.parents ? rec.parents.length : 0,
-          items: rec.parents,
-          top: toplevel
-        };
-        console.log(['####', toplevel.name, curlevel.name, curlevel.idx, curlevel.len])
-        if (curlevel.len) {
-          toplevel = curlevel;
+        if (rec) {
+	        ref.push(rec.id);
+	        if (rec.parents && rec.parents.length) {
+	        	var curlevel = {
+		          name: rec.id,
+		          idx: 0,
+		          len: rec.parents.length,
+		          items: rec.parents,
+		          top: toplevel
+		          // refs: []
+		        };
+	        	// toplevel.refs.push(rec.id);
+	        	// toplevel.refs.push(curlevel.refs);
+	          toplevel = curlevel;
+	        } else {
+	        	toplevel.refs = ref.slice(0);
+	        	ref = [];
+	        	console.log(['reach end ', toplevel.name, toplevel.refs.join(',')])
+	        }
         } else {
-          // ++toplevel.idx;
-          console.log(['<<<<', curlevel.name, curlevel.idx, curlevel.len, toplevel.name, toplevel.idx, toplevel.len])
+        	toplevel.idx--;
         }
-
       }
 
       console.log(toplevel);
+      console.log(ref)
     }
+  }
+
+  function mro(bases) {
+  	var linears = [];
+  	var clsnom = 0;
+  	var uniq = {};
+  	var tail = {idx: 0, refs: [], map: {}, names: []};
+
+  	// build a proper data structure
+  	for (var i = 0, l = bases.length; i < l; ++i) {
+  		var base = bases[i];
+  		var linear = {
+  			idx: 0,
+  			refs: [base].concat(base.refs),
+  			map: {},
+  			names: []
+  		};
+  		linear.refs.forEach(function(ref, idx) {
+  			linear.map[ref.id] = idx;
+  			linear.names.push(ref.id);
+  			if (!uniq[ref.id]) {
+	  			clsnom++;
+	  			uniq[ref.id] = true;
+	  		}
+  		});
+  		linears.push(linear);
+  		tail.refs.push(base);
+  		tail.map[base.id] = i;
+  		tail.names.push(base.id);
+  	}
+  	linears.push(tail);
+
+  	// merge resolution order
+  	var result = [];
+  	var ahead = false;
+  	for (var i = 0;;) {
+  		if (!clsnom || i == linears.length) {
+  			break;
+  		}
+  		console.log(['current seq ', i, linears.length])
+  		var seq = linears[i];
+  		var head = seq.refs[0];
+  		var id = head.id;
+  		console.log('check head ', id, i);
+
+  		// check if it is a good head
+  		for (var j = 0; j < linears.length; ++j) {
+  			if (i !== j) {
+  				var line = linears[j];
+  				if ((id in line.map) && line.refs[0].id !== id) {
+  					console.log(id + ' is a bad head');
+  					head = false;
+  					ahead = true;
+  					break;
+  				}
+  			}
+  		}
+
+  		// find a good head
+  		if (head) {
+  			// once we find a good head, we should go back to head
+  			if (ahead) {
+  				i = 0;
+  				ahead = false;
+  			}
+  			console.log(id + ' is a good head');
+  			clsnom--;
+  			result.push(head);
+  			// delete ref from all seq
+  			for (var k = 0; k < linears.length; ++k) {
+  				var linear = linears[k];
+  				var idx = linear.map[id];
+  				delete linear.map[id];
+  				if (!linear.refs.length) {
+  					linears.splice(k, i);
+  					continue;
+  				}
+  				if (linear.refs[0].id === id) {
+  					linear.refs.shift();
+  				}
+  				console.log([linear.idx, Object.keys(linear.map)])
+  			}
+  		}
+  		// not a good head, move to next seq
+  		else {
+  			i++;
+  		}
+  	}
+
+  	if (clsnom) {
+  		throw new Error('Can not build a linear method resolution');
+  	}
+
+  	console.log(linears)
+  	console.log(result)
   }
   </script>
 </body>

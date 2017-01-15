@@ -97,41 +97,41 @@
       // ref.push(base.id);
       while (true) {
         if (toplevel.idx == toplevel.len) {
-        	var s = toplevel.name + ':' + toplevel.idx + ' ';
-        	// console.log(ref.join('-'))
-        	if (!toplevel.top) {
-        		break;
-        	}
-        	var curlevel = toplevel;
-        	toplevel = toplevel.top;
-        	console.log(s + 'up to ' + toplevel.name + ':' + toplevel.idx);
-        	// console.log(ref)
-        	/*if (toplevel.idx < toplevel.len) {
-        		toplevel.refs = [curlevel.refs];
-        	}*/
+          var s = toplevel.name + ':' + toplevel.idx + ' ';
+          // console.log(ref.join('-'))
+          if (!toplevel.top) {
+            break;
+          }
+          var curlevel = toplevel;
+          toplevel = toplevel.top;
+          console.log(s + 'up to ' + toplevel.name + ':' + toplevel.idx);
+          // console.log(ref)
+          /*if (toplevel.idx < toplevel.len) {
+          	toplevel.refs = [curlevel.refs];
+          }*/
         }
         var rec = toplevel.items[toplevel.idx++];
         if (rec) {
-	        ref.push(rec.id);
-	        if (rec.parents && rec.parents.length) {
-	        	var curlevel = {
-		          name: rec.id,
-		          idx: 0,
-		          len: rec.parents.length,
-		          items: rec.parents,
-		          top: toplevel
-		          // refs: []
-		        };
-	        	// toplevel.refs.push(rec.id);
-	        	// toplevel.refs.push(curlevel.refs);
-	          toplevel = curlevel;
-	        } else {
-	        	toplevel.refs = ref.slice(0);
-	        	ref = [];
-	        	console.log(['reach end ', toplevel.name, toplevel.refs.join(',')])
-	        }
+          ref.push(rec.id);
+          if (rec.parents && rec.parents.length) {
+            var curlevel = {
+              name: rec.id,
+              idx: 0,
+              len: rec.parents.length,
+              items: rec.parents,
+              top: toplevel
+                // refs: []
+            };
+            // toplevel.refs.push(rec.id);
+            // toplevel.refs.push(curlevel.refs);
+            toplevel = curlevel;
+          } else {
+            toplevel.refs = ref.slice(0);
+            ref = [];
+            console.log(['reach end ', toplevel.name, toplevel.refs.join(',')])
+          }
         } else {
-        	toplevel.idx--;
+          toplevel.idx--;
         }
       }
 
@@ -140,100 +140,270 @@
     }
   }
 
-  function mro(bases) {
-  	var linears = [];
-  	var clsnom = 0;
-  	var uniq = {};
-  	var tail = {idx: 0, refs: [], map: {}, names: []};
+  // ===================================================================
+  // ===================================================================
 
-  	// build a proper data structure
-  	for (var i = 0, l = bases.length; i < l; ++i) {
-  		var base = bases[i];
-  		var linear = {
-  			idx: 0,
-  			refs: [base].concat(base.refs),
-  			map: {},
-  			names: []
-  		};
-  		linear.refs.forEach(function(ref, idx) {
-  			linear.map[ref.id] = idx;
-  			linear.names.push(ref.id);
-  			if (!uniq[ref.id]) {
-	  			clsnom++;
-	  			uniq[ref.id] = true;
-	  		}
-  		});
-  		linears.push(linear);
-  		tail.refs.push(base);
-  		tail.map[base.id] = i;
-  		tail.names.push(base.id);
-  	}
-  	linears.push(tail);
+  var op = Object.prototype;
+  var xtor = new Function;
+  var cname = 'constructor';
 
-  	// merge resolution order
-  	var result = [];
-  	var ahead = false;
-  	for (var i = 0;;) {
-  		if (!clsnom || i == linears.length) {
-  			break;
-  		}
-  		console.log(['current seq ', i, linears.length])
-  		var seq = linears[i];
-  		var head = seq.refs[0];
-  		var id = head.id;
-  		console.log('check head ', id, i);
+  function mix() {
 
-  		// check if it is a good head
-  		for (var j = 0; j < linears.length; ++j) {
-  			if (i !== j) {
-  				var line = linears[j];
-  				if ((id in line.map) && line.refs[0].id !== id) {
-  					console.log(id + ' is a bad head');
-  					head = false;
-  					ahead = true;
-  					break;
-  				}
-  			}
-  		}
-
-  		// find a good head
-  		if (head) {
-  			// once we find a good head, we should go back to head
-  			if (ahead) {
-  				i = 0;
-  				ahead = false;
-  			}
-  			console.log(id + ' is a good head');
-  			clsnom--;
-  			result.push(head);
-  			// delete ref from all seq
-  			for (var k = 0; k < linears.length; ++k) {
-  				var linear = linears[k];
-  				var idx = linear.map[id];
-  				delete linear.map[id];
-  				if (!linear.refs.length) {
-  					linears.splice(k, i);
-  					continue;
-  				}
-  				if (linear.refs[0].id === id) {
-  					linear.refs.shift();
-  				}
-  				console.log([linear.idx, Object.keys(linear.map)])
-  			}
-  		}
-  		// not a good head, move to next seq
-  		else {
-  			i++;
-  		}
-  	}
-
-  	if (clsnom) {
-  		throw new Error('Can not build a linear method resolution');
-  	}
-
-  	console.log(linears)
-  	console.log(result)
   }
+
+  function mixOwn(target, source) {
+    for (var name in source) {
+      if (name !== cname && source.hasOwnProperty(name)) {
+        target[name] = source[name];
+      }
+    }
+  }
+
+  // implementation of safe mixin function
+  function safeMixin(target, source) {
+    var name, t;
+    // add props adding metadata for incoming functions skipping a constructor
+    for (name in source) {
+      t = source[name];
+      if ((t !== op[name] || !(name in op)) && name !== cname) {
+        if (typeof t === 'function') {
+          // non-trivial function method => attach its name
+          t.nom = name;
+        }
+        target[name] = t;
+      }
+    }
+
+    return target;
+  }
+
+  // chained constructor compatible with the legacy declare()
+  function chainedCtor(bases) {
+    return function() {
+      var a = arguments,
+        args = a,
+        a0 = a[0],
+        f, i, m,
+        l = bases.length;
+
+      if (!(this instanceof a.callee)) {
+        // not called via new, so force it
+        return applyNew(a);
+      }
+
+      // 2) call all non-trivial constructors using prepared arguments
+      for (i = l - 1; i >= 0; --i) {
+        f = bases[i];
+        m = f._meta;
+        f = m ? m.ctor : f;
+        if (f) {
+          f.apply(this, a);
+        }
+      }
+      // 3) continue the original ritual: call the postscript
+      f = this.postscript;
+      if (f) {
+        f.apply(this, args);
+      }
+    };
+  }
+
+  // chained constructor compatible with the legacy declare()
+  function singleCtor(ctor) {
+    return function() {
+      var a = arguments,
+        t = a,
+        a0 = a[0],
+        f;
+
+      if (!(this instanceof a.callee)) {
+        // not called via new, so force it
+        return applyNew(a);
+      }
+
+      // 2) call a constructor
+      if (ctor) {
+        ctor.apply(this, a);
+      }
+      // 3) continue the original ritual: call the postscript
+      f = this.postscript;
+      if (f) {
+        f.apply(this, a);
+      }
+    };
+  }
+
+  // forceNew(ctor)
+  // return a new object that inherits from ctor.prototype but
+  // without actually running ctor on the object.
+  function forceNew(ctor) {
+    // create object with correct prototype using a do-nothing
+    // constructor
+    xtor.prototype = ctor.prototype;
+    var t = new xtor;
+    xtor.prototype = null; // clean up
+    return t;
+  }
+
+  // applyNew(args)
+  // just like 'new ctor()' except that the constructor and its arguments come
+  // from args, which must be an array or an arguments object
+  function applyNew(args) {
+    // create an object with ctor's prototype but without
+    // calling ctor on it.
+    var ctor = args.callee,
+      t = forceNew(ctor);
+    // execute the real constructor on the new object
+    ctor.apply(t, args);
+    return t;
+  }
+
+  function mro(bases) {
+    var linears = [];
+    var clsnom = 0;
+    var uniq = {};
+    var tail = {
+      idx: 0,
+      refs: [],
+      map: {},
+      names: []
+    };
+
+    // build a proper data structure
+    for (var i = 0, l = bases.length; i < l; ++i) {
+      var base = bases[i];
+      var linear = {
+        idx: 0,
+        refs: [base].concat(base.refs),
+        map: {},
+        names: []
+      };
+      linear.refs.forEach(function(ref, idx) {
+        linear.map[ref.id] = idx;
+        linear.names.push(ref.id);
+        if (!uniq[ref.id]) {
+          clsnom++;
+          uniq[ref.id] = true;
+        }
+      });
+      linears.push(linear);
+      tail.refs.push(base);
+      tail.map[base.id] = i;
+      tail.names.push(base.id);
+    }
+    linears.push(tail);
+
+    // merge resolution order
+    var result = [];
+    var ahead = false;
+    for (var i = 0;;) {
+      if (!clsnom || i == linears.length) {
+        break;
+      }
+      console.log(['current seq ', i, linears.length])
+      var seq = linears[i];
+      var head = seq.refs[0];
+      var id = head.id;
+      console.log('check head ', id, i);
+
+      // check if it is a good head
+      for (var j = 0; j < linears.length; ++j) {
+        if (i !== j) {
+          var line = linears[j];
+          if ((id in line.map) && line.refs[0].id !== id) {
+            console.log(id + ' is a bad head');
+            head = false;
+            ahead = true;
+            break;
+          }
+        }
+      }
+
+      // find a good head
+      if (head) {
+        // once we find a good head, we should go back to head
+        if (ahead) {
+          i = 0;
+          ahead = false;
+        }
+        console.log(id + ' is a good head');
+        clsnom--;
+        result.push(head);
+        // delete ref from all seq
+        for (var k = 0; k < linears.length; ++k) {
+          var linear = linears[k];
+          var idx = linear.map[id];
+          delete linear.map[id];
+          if (!linear.refs.length) {
+            linears.splice(k, i);
+            continue;
+          }
+          if (linear.refs[0].id === id) {
+            linear.refs.shift();
+          }
+          console.log([linear.idx, Object.keys(linear.map)])
+        }
+      }
+      // not a good head, move to next seq
+      else {
+        i++;
+      }
+    }
+
+    if (clsnom) {
+      throw new Error('Can not build a linear method resolution');
+    }
+
+    console.log(linears)
+    console.log(result)
+  }
+
+  function def(className, superclass, protod) {
+    var hierar, clazz, proto, ctor;
+
+ 		// compute method resolution order
+    if (typeof superclass === 'array') {
+      hierar = mro(superclass, className);
+    } else {
+      hierar = [0];
+      if (superclass) {
+        if (typeof superclass === 'function') {
+          clazz = superclass.clazz;
+          hierar = hierar.concat(clazz ? clazz.mro : superclass);
+        } else {
+          // todo: throw error
+        }
+      } else if (superclass !== null) {
+        // todo: throw error
+      }
+    }
+  }
+
+  // build constructor prototype
+  if (superclass) {
+    for (var i = hierar.length - 1;; --i) {
+      proto = forceNew(superclass);
+      if (!i) {
+        break;
+      }
+      clazz = hierar[i];
+      if (clazz.clazz) {
+      	mixOwn(proto, clazz.proto);
+      } else {
+      	mix(proto, clazz.proto);
+      }
+      ctor = new Function;
+      ctor.superclass = superclass;
+      ctor.prototype = proto;
+      superclass = proto.constructor = ctor;
+    }
+  } else {
+  	proto = {};
+  }
+  safeMixin(proto, protod);
+
+  // declare the class
+  
   </script>
 </body>
 

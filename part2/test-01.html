@@ -388,8 +388,38 @@
     return linear;
   }
 
-  function inherited(args, name, ) {
+  function inherited(name, args) {
+  	if (typeof name === 'object') {
+  		args = name;
+  		name = null;
+  	}
+  	var caller = args.callee;
+  	name = name || caller.nom;
 
+  	var clazz = this.constructor.clazz;
+  	var hierar = clazz.hierar;
+  	var pos = 0;
+  	var base, proto, f;
+  	for (var i = 0, l = hierar.length; i < l; ++i) {
+  		base = hierar[i];
+  		proto = base.prototype;
+  		if (proto[name] === caller && proto.hasOwnProperty(name)) {
+  			pos = i;
+  			break;
+  		}
+  	}
+
+  	while (base = hierar[++pos]) {
+  		proto = base.prototype;
+  		if (proto[name] && (base.clazz ? proto.hasOwnProperty(name) : proto[name] !== op[name])) {
+  			f = proto[name];
+  			break;
+  		}
+		}
+		f = base && f || op[name];
+  	if (f) {
+  		return f.apply(this, args);
+  	}
   }
 
   function def(clsname, superclass, protod) {
@@ -450,6 +480,7 @@
     };
     ctor.prototype = proto;
     proto.constructor = ctor;
+    proto.inherited = inherited;
     if (clsname) {
       proto.clsname = clsname;
     }
@@ -462,9 +493,9 @@
       this.name = 'X';
       console.log('X');
     },
-    protoName: 'X'，
+    protoName: 'X',
     protoFn: function() {
-
+    	console.log('X fn');
     }
   });
   var F = def('F', [X], {
@@ -472,7 +503,11 @@
       this.name = 'F';
       console.log('F');
     },
-    protoName: 'F'
+    protoName: 'F',
+    protoFn: function() {
+    	this.inherited(arguments);
+    	console.log('F fn');
+    }
   });
   console.time('e')
   var E = def('E', [X], {
@@ -507,7 +542,11 @@
       this.name = 'B';
       console.log('B');
     },
-    protoName: 'B'
+    protoName: 'B',
+    protoFn: function() {
+    	this.inherited(arguments);
+    	console.log('B fn');
+    }
   });
   console.timeEnd('b')
   console.time('a')

@@ -38,13 +38,13 @@
   var ARC4 = ARC * 360;
   var DEG = 180 / Math.PI;
   var radius = 100;
-  var tick;
+  var startTime, tickId;
 
   // 点
   var spot = {
     angle: 0,
-    radius: 5,
-    speed: 4
+    radius: 6,
+    angleSwing: 360
   };
   var arcperiod = Math.round(Math.sqrt(360) + 19 / 2);
   // 弧
@@ -52,41 +52,43 @@
     angle: 0,
     size: 30,
     radius: radius,
-    angleSpeed: spot.speed,
-    angleAcceler: spot.speed / 10,
-    sizeSpeed: 330 / arcperiod / 2,
+    angleSwing: 360,
+    sizeSwing: 330,
     round: 0
   };
 
   window.onload = function() {
     rendering();
-    tick = window.requestAnimationFrame(redraw);
+    startTime = Date.now();
+    tickId = window.requestAnimationFrame(redraw);
   };
 
   function redraw() {
-    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+  	ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
     updating();
     rendering();
     window.requestAnimationFrame(redraw);
   }
 
   function updating() {
-    var aa = arc.angle;
-    var dir = aa >= 0 && aa < 180 ? 1 : -1; // 0 ~ 180 加速 180 ~ 360 减速
-    var av = arc.angleSpeed + dir * arc.angleAcceler;
-    var nss = spot.angle + spot.speed;
-    var nsa = aa + av;
-    if (nsa >= 360) {
-      arc.round += 1;
-      if (arc.round % 2 === 0) {
-        arc.size = 0;
+  	var now = Date.now();
+  	var elasped = now - startTime;
+  	var percent = elasped / 1500;
+    if (percent >= 1) {
+    	arc.round += 1;
+    	if (arc.round % 2 === 0) {
+    		startTime = Date.now();
+    		spot.angle = 0;
+        arc.size = 30;
       }
-      console.log([arc.size, arc.angle, arc.round]);
-      // debugger;
     }
-    spot.angle = nss > 360 ? nss - 360 : nss;
-    arc.angle = nsa > 360 ? nsa - 360 : nsa;
-    arc.size += arc.sizeSpeed;
+    var aa = arc.angle;
+    var nspot = spot.angleSwing * percent;
+    var nangle = arc.angleSwing * easing(percent);
+    var nsize = arc.sizeSwing * percent;
+    spot.angle = nspot;
+    arc.angle = nangle;
+    arc.size = nsize;
   }
 
   function rendering() {
@@ -117,7 +119,7 @@
     var arcEnd = (arc.angle + arc.size - 90) * ARC;
     ctx.save();
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 12;
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, arcStart, arcEnd);
     ctx.stroke();
@@ -137,6 +139,9 @@
     ctx.restore();
   }
 
+  function easing(k) {
+  	return 0.5 * (1 - Math.cos(Math.PI * k));
+  }
   </script>
 </body>
 

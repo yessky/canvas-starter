@@ -21,472 +21,16 @@
   <canvas id="stage" width="640" height="480" style="border: 1px solid red; margin: 20px"></canvas>
   <script src="../sketch.js/Sketch.js"></script>
   <script src="../sketch.js/declare.js"></script>
-  <script src="../sketch.js/util.js"></script>
+  <script src="../sketch.js/core.js"></script>
   <script type="text/javascript">
   var canvas = document.getElementById('stage');
   var ctx = canvas.getContext('2d');
 
-  var AABB = Sketch.declare('Sketch.AABB', Sketch.Size, {
-    constructor: function(w, h, x, y) {
-      this.x = x;
-      this.y = y;
-    }
-  });
-
-  // var X = {
-  //   id: 'X',
-  //   refs: [],
-  //   parents: null
-  // };
-  // var D = {
-  //   id: 'D',
-  //   refs: [X],
-  //   parents: [X]
-  // };
-  // var E = {
-  //   id: 'E',
-  //   refs: [X],
-  //   parents: [X]
-  // };
-  // var F = {
-  //   id: 'F',
-  //   refs: [X],
-  //   parents: [X]
-  // };
-  // var B = {
-  //   id: 'B',
-  //   refs: [E, D, X],
-  //   parents: [E, D]
-  // };
-  // var C = {
-  //   id: 'C',
-  //   refs: [D, F, X],
-  //   parents: [D, F]
-  // };
-  // var A = {
-  //   id: 'A',
-  //   refs: [B, E, C, D, F, X],
-  //   parents: [B, C]
-  // };
-  // var nom = 0;
-
-  function mro1(bases) {
-    var root = [];
-    var sets = {};
-    for (var i = 0, l = bases.length; i < l; ++i) {
-      var base = bases[i];
-      var parents = base.parents;
-      var len = parents.length;
-      console.log(i)
-      if (!sets[base.id]) {
-        sets[base.id] = {
-          id: base.id,
-          refs: [],
-          parents: []
-        };
-      }
-      var ref = sets[base.id].refs;
-      var toplevel = {
-        name: base.id,
-        pos: 0,
-        len: parents ? parents.length : 0,
-        items: parents,
-        top: null,
-        refs: []
-      };
-      // ref.push(base.id);
-      while (true) {
-        if (toplevel.pos == toplevel.len) {
-          var s = toplevel.name + ':' + toplevel.pos + ' ';
-          // console.log(ref.join('-'))
-          if (!toplevel.top) {
-            break;
-          }
-          var curlevel = toplevel;
-          toplevel = toplevel.top;
-          console.log(s + 'up to ' + toplevel.name + ':' + toplevel.pos);
-          // console.log(ref)
-          /*if (toplevel.pos < toplevel.len) {
-            toplevel.refs = [curlevel.refs];
-          }*/
-        }
-        var rec = toplevel.items[toplevel.pos++];
-        if (rec) {
-          ref.push(rec.id);
-          if (rec.parents && rec.parents.length) {
-            var curlevel = {
-              name: rec.id,
-              pos: 0,
-              len: rec.parents.length,
-              items: rec.parents,
-              top: toplevel
-                // refs: []
-            };
-            // toplevel.refs.push(rec.id);
-            // toplevel.refs.push(curlevel.refs);
-            toplevel = curlevel;
-          } else {
-            toplevel.refs = ref.slice(0);
-            ref = [];
-            console.log(['reach end ', toplevel.name, toplevel.refs.join(',')])
-          }
-        } else {
-          toplevel.pos--;
-        }
-      }
-
-      console.log(toplevel);
-      console.log(ref)
-    }
-  }
-
   // ===================================================================
   // ===================================================================
 
-  var op = Object.prototype;
-  var xtor = new Function;
-  var empty = {};
-  var cname = 'constructor';
-
-  function mix(dest, source, mixFunc) {
-    for (var name in source) {
-      var s = source[name];
-      if (!(name in dest) || (dest[name] !== s &&
-          (!(name in empty) || empty[name] !== s))) {
-        dest[name] = mixFunc ? mixFunc(name, s) : s;
-      }
-    }
-    return dest;
-  }
-
-  function mixOwn(target, source) {
-    for (var name in source) {
-      if (name !== cname && source.hasOwnProperty(name)) {
-        target[name] = source[name];
-      }
-    }
-  }
-
-  // implementation of safe mixin function
-  function safeMixin(target, source) {
-    var name, t;
-    // add props adding metadata for incoming functions skipping a constructor
-    for (name in source) {
-      t = source[name];
-      if ((t !== op[name] || !(name in op)) && name !== cname) {
-        if (typeof t === 'function') {
-          // non-trivial function method => attach its name
-          t.nom = name;
-        }
-        target[name] = t;
-      }
-    }
-
-    return target;
-  }
-
-  // chained constructor compatible with the legacy declare()
-  function chainedCtor(bases) {
-    return function() {
-      var a = arguments,
-        args = a,
-        a0 = a[0],
-        f, i, m,
-        l = bases.length;
-
-      if (!(this instanceof a.callee)) {
-        // not called via new, so force it
-        return applyNew(a);
-      }
-
-      // 2) call all non-trivial constructors using prepared arguments
-      for (i = l - 1; i >= 0; --i) {
-        f = bases[i];
-        m = f.clazz;
-        f = m ? m.ctor : f;
-        if (f) {
-          f.apply(this, a);
-        }
-      }
-      // 3) continue the original ritual: call the postscript
-      f = this.postscript;
-      if (f) {
-        f.apply(this, args);
-      }
-    };
-  }
-
-  // chained constructor compatible with the legacy declare()
-  function singleCtor(ctor) {
-    return function() {
-      var a = arguments,
-        t = a,
-        a0 = a[0],
-        f;
-
-      if (!(this instanceof a.callee)) {
-        // not called via new, so force it
-        return applyNew(a);
-      }
-
-      // 2) call a constructor
-      if (ctor) {
-        ctor.apply(this, a);
-      }
-      // 3) continue the original ritual: call the postscript
-      f = this.postscript;
-      if (f) {
-        f.apply(this, a);
-      }
-    };
-  }
-
-  // forceNew(ctor)
-  // return a new object that inherits from ctor.prototype but
-  // without actually running ctor on the object.
-  function forceNew(ctor) {
-    // create object with correct prototype using a do-nothing
-    // constructor
-    xtor.prototype = ctor.prototype;
-    var t = new xtor;
-    xtor.prototype = null; // clean up
-    return t;
-  }
-
-  // applyNew(args)
-  // just like 'new ctor()' except that the constructor and its arguments come
-  // from args, which must be an array or an arguments object
-  function applyNew(args) {
-    // create an object with ctor's prototype but without
-    // calling ctor on it.
-    var ctor = args.callee,
-      t = forceNew(ctor);
-    // execute the real constructor on the new object
-    ctor.apply(t, args);
-    return t;
-  }
-
-  function mro(bases, cls) {
-    var seqs = [];
-    var clsnum = 0;
-    var clsmap = {};
-    var tail = {
-      pos: 0,
-      map: {},
-      refs: []
-    };
-
-    // console.log('\n')
-    // console.log(cls + ' mro =================')
-
-    // build a proper data structure
-    for (var i = 0, l = bases.length; i < l; ++i) {
-      var base = bases[i];
-      var refs = base.clazz ? base.clazz.hierar.slice(0) : [];
-      var clsname = base.prototype.clsname;
-      var seq = {
-        pos: 0,
-        map: {},
-        refs: refs
-      };
-
-      tail.refs.push(base);
-      tail.map[clsname] = true;
-
-      for (var j = 0, s = refs.length; j < s; ++j) {
-        clsname = refs[j].prototype.clsname;
-        seq.map[clsname] = true;
-        if (!clsmap[clsname]) {
-          clsnum++;
-          clsmap[clsname] = true;
-        }
-      }
-      seqs.push(seq);
-    }
-    if (l > 1) {
-      seqs.push(tail);
-    }
-
-    // console.log(seqs.slice(0), clsnum, seqs.length);
-
-    // merge resolution order
-    var linear = [];
-    var ahead = false;
-    for (var i = 0;;) {
-      if (!clsnum || i === seqs.length) {
-        // end of seqs, or can not build linear mro
-        break;
-      }
-
-      // console.log(['current seq ', i, ' of ', seqs.length].join(''))
-
-      var seq = seqs[i];
-      var head = seq.refs[0]; // take head
-      var clsname = head.prototype.clsname;
-
-      // console.log('check head ' + clsname +' at ' + i);
-
-      // test if it is a good head
-      for (var j = 0; j < seqs.length; ++j) {
-        if (i !== j) {
-          var q = seqs[j];
-          if ((clsname in q.map) && q.refs[0].prototype.clsname !== clsname) {
-            // console.log(clsname + ' is a bad head');
-            head = false;
-            ahead = true;
-            break;
-          }
-        }
-      }
-
-      // find a good head
-      if (head) {
-        // once we find a good head,  go back to the head of seqs
-        if (ahead) {
-          i = 0;
-          ahead = false;
-        }
-
-        // console.log(clsname + ' is a good head');
-
-        clsnum--;
-        linear.push(head);
-
-        // delete ref from all seqs
-        for (var j = 0; j < seqs.length; ++j) {
-          var q = seqs[j];
-          // delete empty seq from seqs
-          if (!q.refs.length) {
-            // console.log(['splice ' + j]);
-            if (j < i) {
-              i--;
-            }
-            seqs.splice(j--, 1);
-            continue;
-          }
-          // delete it from current seq map
-          delete q.map[clsname];
-          // delete it from current seq
-          if (q.refs[0].prototype.clsname === clsname) {
-            q.refs.shift();
-          }
-          // console.log(['seq refs ', j, q.refs.length])
-        }
-      }
-      // not a good head, move to next seq
-      else {
-        i++;
-      }
-    }
-
-    if (clsnum) {
-      throw new Error('Can not build a linear method resolution');
-    }
-
-    // console.log(linear);
-
-    return linear;
-  }
-
-  function inherited(name, args) {
-  	if (typeof name === 'object') {
-  		args = name;
-  		name = null;
-  	}
-  	var caller = args.callee;
-  	name = name || caller.nom;
-
-  	var clazz = this.constructor.clazz;
-  	var hierar = clazz.hierar;
-  	var pos = 0;
-  	var base, proto, f;
-  	for (var i = 0, l = hierar.length; i < l; ++i) {
-  		base = hierar[i];
-  		proto = base.prototype;
-  		if (proto[name] === caller && proto.hasOwnProperty(name)) {
-  			pos = i;
-  			break;
-  		}
-  	}
-
-  	while (base = hierar[++pos]) {
-  		proto = base.prototype;
-  		if (proto[name] && (base.clazz ? proto.hasOwnProperty(name) : proto[name] !== op[name])) {
-  			f = proto[name];
-  			break;
-  		}
-		}
-		f = base && f || op[name];
-  	if (f) {
-  		return f.apply(this, args);
-  	}
-  }
-
-  function def(clsname, superclass, protod) {
-    var hierar = [0],
-      clazz, proto, ctor;
-
-    // compute method resolution order
-    if (op.toString.call(superclass) === '[object Array]') {
-      hierar = hierar.concat(mro(superclass, clsname));
-    } else {
-      if (superclass) {
-        if (typeof superclass === 'function') {
-          clazz = superclass.clazz;
-          hierar = hierar.concat(clazz ? clazz.mro : superclass);
-        } else {
-          // todo: throw error
-        }
-      } else if (superclass !== null) {
-        // todo: throw error
-      }
-    }
-
-
-    // build constructor prototype
-    superclass = hierar[hierar.length - 1];
-    if (superclass) {
-      for (var i = hierar.length - 2;; --i) {
-        proto = forceNew(superclass);
-        if (!i) {
-          break;
-        }
-        clazz = hierar[i];
-        if (clazz.clazz) {
-          mixOwn(proto, clazz.prototype);
-        } else {
-          mix(proto, clazz.prototype);
-        }
-        ctor = new Function;
-        ctor.superclass = superclass;
-        ctor.prototype = proto;
-        superclass = proto.constructor = ctor;
-      }
-    } else {
-      proto = {};
-    }
-    safeMixin(proto, protod);
-
-    // declare the class
-    ctor = protod.constructor;
-    if (ctor !== op.constructor) {
-      ctor.nom = cname;
-      proto.constructor = ctor;
-    }
-    hierar[0] = ctor = hierar.length === 1 ? singleCtor(protod.constructor) : chainedCtor(hierar);
-    ctor.clazz = {
-      hierar: hierar,
-      ctor: protod.constructor
-    };
-    ctor.prototype = proto;
-    proto.constructor = ctor;
-    proto.inherited = inherited;
-    if (clsname) {
-      proto.clsname = clsname;
-    }
-
-    return ctor;
-  }
+  var def = Sketch.declare;
+  
 
   var X = def('X', null, {
     constructor: function() {
@@ -495,7 +39,7 @@
     },
     protoName: 'X',
     protoFn: function() {
-    	console.log('X fn');
+      console.log('X fn');
     }
   });
   var F = def('F', [X], {
@@ -505,8 +49,11 @@
     },
     protoName: 'F',
     protoFn: function() {
-    	this.inherited(arguments);
-    	console.log('F fn');
+      this.inherited(arguments);
+      console.log('F fn');
+    },
+    protoF2: function() {
+      console.log('F protoF2');
     }
   });
   console.time('e')
@@ -544,8 +91,8 @@
     },
     protoName: 'B',
     protoFn: function() {
-    	this.inherited(arguments);
-    	console.log('B fn');
+      this.inherited(arguments);
+      console.log('B fn');
     }
   });
   console.timeEnd('b')
@@ -555,9 +102,21 @@
       this.name = 'A';
       console.log('A');
     },
-    protoName: 'A'
+    protoName: 'A',
+    protoF2: function() {
+      this.inherited(arguments);
+      console.log('A protoF2');
+    }
   });
   console.timeEnd('a')
+
+  var AABB = Sketch.declare('Sketch.AABB', [Sketch.Bounds, Sketch.Size], {
+    getCenter: function() {
+      return {
+        x: this.left + this.w / 2
+      }
+    }
+  });
   </script>
 </body>
 

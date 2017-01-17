@@ -38,26 +38,58 @@
   var ARC4 = ARC * 360;
   var DEG = 180 / Math.PI;
   var radius = 100;
+  var tick;
 
-  // 弧
-  var arc = {
-    pos: ARC3,
-    radius: radius,
-    speed: ARC,
-    acceler: ARC / 10, // 加速度
-    round: 0
-  };
   // 点
   var spot = {
     angle: 0,
-    radius: 5
+    radius: 5,
+    speed: 4
+  };
+  var arcperiod = Math.round(Math.sqrt(360) + 19 / 2);
+  // 弧
+  var arc = {
+    angle: 0,
+    size: 30,
+    radius: radius,
+    angleSpeed: spot.speed,
+    angleAcceler: spot.speed / 10,
+    sizeSpeed: 330 / arcperiod / 2,
+    round: 0
   };
 
-  window.onload = rendering;
+  window.onload = function() {
+    rendering();
+    tick = window.requestAnimationFrame(redraw);
+  };
 
-  function rendering(disableLight) {
+  function redraw() {
     ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    updating();
+    rendering();
+    window.requestAnimationFrame(redraw);
+  }
 
+  function updating() {
+    var aa = arc.angle;
+    var dir = aa >= 0 && aa < 180 ? 1 : -1; // 0 ~ 180 加速 180 ~ 360 减速
+    var av = arc.angleSpeed + dir * arc.angleAcceler;
+    var nss = spot.angle + spot.speed;
+    var nsa = aa + av;
+    if (nsa >= 360) {
+      arc.round += 1;
+      if (arc.round % 2 === 0) {
+        arc.size = 0;
+      }
+      console.log([arc.size, arc.angle, arc.round]);
+      // debugger;
+    }
+    spot.angle = nss > 360 ? nss - 360 : nss;
+    arc.angle = nsa > 360 ? nsa - 360 : nsa;
+    arc.size += arc.sizeSpeed;
+  }
+
+  function rendering() {
     drawBackground();
     drawArc();
     drawSpot();
@@ -65,7 +97,7 @@
 
   function drawBackground() {
     var size = 56;
-    var text = 'MIGU';
+    var text = 'LOGO';
     ctx.save();
     ctx.strokeStyle = 'red';
     ctx.fillStyle = 'red';
@@ -76,27 +108,30 @@
     ctx.closePath();
     ctx.stroke();
     var offset = ctx.measureText(text).width / 2;
-    ctx.fillText(text, canvasCenter.x - offset, canvasCenter.y + size * .4);
+    ctx.fillText(text, centerX - offset, centerY + size * .4);
     ctx.restore();
   }
 
   function drawArc() {
-    // ctx.save();
-    // ctx.strokeStyle = 'white';
-    // ctx.beginPath();
-    // ctx.arc(spot.pos.x, spot.pos.y, spot.radius, 0, ARC4);
-    // ctx.closePath();
-    // ctx.fill();
-    // ctx.restore();
+    var arcStart = (arc.angle - 90) * ARC;
+    var arcEnd = (arc.angle + arc.size - 90) * ARC;
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, arcStart, arcEnd);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawSpot() {
+    var a = (spot.angle - 90) * ARC;
+    var ax = centerX + radius * Math.cos(a);
+    var ay = centerY + radius * Math.sin(a);
     ctx.save();
-    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
     ctx.beginPath();
-    ctx.translate(spot.pos.x, spot.pos.y);
-    ctx.rotate(spot.angle);
-    ctx.arc(0, 0, spot.radius, 0, ARC4);
+    ctx.arc(ax, ay, spot.radius, 0, ARC4);
     ctx.closePath();
     ctx.fill();
     ctx.restore();

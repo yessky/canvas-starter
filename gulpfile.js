@@ -33,7 +33,7 @@ gulp.task('default', function(cb) {
 					return Number(a) > Number(b) ? 1 : -1;
 				});
 				keys.forEach(function(idx) {
-					content += '\n\t<p><a href="test-' + idx + '.html" target="_blank">Chapter ' + idx + ': ' + titleMap[idx] + '</a></p>';
+					content += '\n\t<p><a href="test-' + idx + '.html" target="_blank">chapter ' + idx + ': ' + titleMap[idx].replace(/canvas\s+test-\d+\s*-\s*/, '') + '</a></p>';
 				});
 				content += '\n';
 				file.path = file.path.replace('.tpl', '.html');

@@ -2,47 +2,67 @@
 <html>
 
 <head>
-  <title>canvas starter lessons</title>
+  <title>玩转canvas之入门教程－30+API示例及动画游戏实例源码</title>
   <style type="text/css">
-  body {font-size: 14px; line-height: 125%; color: #333}
-  a {text-decoration: none;}
-  a:hover { text-decoration: underline}
+  body {font-size: 14px; line-height: 1.2; color: #333}
+  a {text-decoration: none; color: #46a28d}
+  a:hover {text-decoration: underline}
   p {margin: 3px; padding-left: 50px}
+  ol {margin: 5px 50px 20px; padding: 0 0 0 30px}
+  li {margin: 0 0 6px 0; padding: 0; text-decoration: underline}
+  .title {margin: 20px 0 10px 0; padding-left: 30px}
+  .title span {font-size: 30px; line-height: 100%; display: inline-block; vertical-align: bottom}
+  .title sub {font-size: 14px; display: inline-block; vertical-align: bottom}
   </style>
 </head>
 
 <body>
-	<p><a href="test-01.html" target="_blank">Chapter 01: canvas test-01 - ctx.save/ctx.restore</a></p>
-	<p><a href="test-02.html" target="_blank">Chapter 02: canvas test-02 - ctx.fill*</a></p>
-	<p><a href="test-03.html" target="_blank">Chapter 03: canvas test-03 - ctx.drawImage*</a></p>
-	<p><a href="test-04.html" target="_blank">Chapter 04: canvas test-04 - ctx.fillRect/strokeRect/clearRect</a></p>
-	<p><a href="test-05.html" target="_blank">Chapter 05: canvas test-05 - ctx.arc</a></p>
-	<p><a href="test-06.html" target="_blank">Chapter 06: canvas test-06 - ctx.beginPath/closePath</a></p>
-	<p><a href="test-07.html" target="_blank">Chapter 07: canvas test-07 - 实例1:lineTo绘制围棋棋盘</a></p>
-	<p><a href="test-08.html" target="_blank">Chapter 08: canvas test-07 - 实例2:lineTo绘制菊花</a></p>
-	<p><a href="test-09.html" target="_blank">Chapter 09: canvas test-09 - quadraticCurveTo/bezierCurveTo二次/三次贝塞尔曲线</a></p>
-	<p><a href="test-10.html" target="_blank">Chapter 10: canvas test-10 - ctx.createLinearGradient线性渐变</a></p>
-	<p><a href="test-11.html" target="_blank">Chapter 11: canvas test-11 - ctx.createRadialGradient径向渐变</a></p>
-	<p><a href="test-12.html" target="_blank">Chapter 12: canvas test-12 - ctx.translate/ctx.scale/ctx.rotate 位移/缩放/旋转</a></p>
-	<p><a href="test-13.html" target="_blank">Chapter 13: canvas test-13 - ctx.transform 矩阵变换</a></p>
-	<p><a href="test-14.html" target="_blank">Chapter 14: canvas test-14 - ctx.globalCompositeOperation图形组合</a></p>
-	<p><a href="test-15.html" target="_blank">Chapter 15: canvas test-15 - ctx.shadowOffsetX/shadowOffsetY/shadowColor/shadowBlur阴影</a></p>
-	<p><a href="test-16.html" target="_blank">Chapter 16: canvas test-16 - ctx.createPattern(image, type) 图像平铺</a></p>
-	<p><a href="test-17.html" target="_blank">Chapter 17: canvas test-17 - ctx.clip() 画布裁剪</a></p>
-	<p><a href="test-18.html" target="_blank">Chapter 18: canvas test-18 - ctx.getImageData/putImageData/createImageData 像素操作</a></p>
-	<p><a href="test-19.html" target="_blank">Chapter 19: canvas test-19 - canvas事件</a></p>
-	<p><a href="test-20.html" target="_blank">Chapter 20: canvas test-23 - canvas像素碰撞检测</a></p>
-	<p><a href="test-21.html" target="_blank">Chapter 21: canvas test-21 - canvas 小游戏</a></p>
-	<p><a href="test-22.html" target="_blank">Chapter 22: canvas test-22 - canvas 小游戏改进版（添加sprite及优化缩放）</a></p>
-	<p><a href="test-23.html" target="_blank">Chapter 23: canvas test-23 - canvas碰撞检测（光线投射法）</a></p>
-	<p><a href="test-24.html" target="_blank">Chapter 24: canvas test-24 - 图片翻转</a></p>
-	<p><a href="test-25.html" target="_blank">Chapter 25: canvas test-25 - 像素级别碰撞检测</a></p>
-	<p><a href="test-26.html" target="_blank">Chapter 26: canvas test-26 - 求解多边形重心</a></p>
-	<p><a href="test-27.html" target="_blank">Chapter 27: canvas test-27 - 实现探照灯</a></p>
-	<p><a href="test-28.html" target="_blank">Chapter 28: canvas test-28 - 绘制圆角矩形/虚线/箭头</a></p>
-	<p><a href="test-29.html" target="_blank">Chapter 29: canvas test-29 - 绘制虚线圆角矩形/虚线圆(弧)/虚线箭头</a></p>
-	<p><a href="test-30.html" target="_blank">Chapter 30: canvas test-30 - 绘制椭圆/虚线椭圆(弧)</a></p>
-	<p><a href="test-31.html" target="_blank">Chapter 31: canvas test-31 - 高级loading动画</a></p>
+	<p class="title"><span>本教程包含以下内容</span><sub>(原创作品转载请注明出处)</sub></p>
+	<ol>
+		<li>大部分canvas基础API用法示例，内部工作原理探索</li>
+		<li>部分bug以及hack方法，如怎样绘制1px粗细的线条</li>
+		<li>部分API对应的数学变换公式推导，如scale/translate/rotate/transform与矩阵的相互推导</li>
+		<li>绘制虚线/箭头/圆角矩形/虚线圆/虚线圆角矩形/椭圆等图形</li>
+		<li>常见的碰撞检测、像素检测方法演示/实现细节/适用场景</li>
+		<li>如何实现物体堆叠顺序的变换，类似css中的z-index</li>
+		<li>2d动画中的精灵动画实现原理解析</li>
+		<li>如何计算多边形重心</li>
+	</ol>
+
+	<p class="title"><span>目录</span></p>
+	
+	<p><a href="test-01.html" target="_blank">chapter 01: ctx.save/ctx.restore</a></p>
+	<p><a href="test-02.html" target="_blank">chapter 02: ctx.fill*</a></p>
+	<p><a href="test-03.html" target="_blank">chapter 03: ctx.drawImage*</a></p>
+	<p><a href="test-04.html" target="_blank">chapter 04: ctx.fillRect/strokeRect/clearRect</a></p>
+	<p><a href="test-05.html" target="_blank">chapter 05: ctx.arc</a></p>
+	<p><a href="test-06.html" target="_blank">chapter 06: ctx.beginPath/closePath</a></p>
+	<p><a href="test-07.html" target="_blank">chapter 07: 实例1:lineTo绘制围棋棋盘</a></p>
+	<p><a href="test-08.html" target="_blank">chapter 08: 实例2:lineTo绘制菊花</a></p>
+	<p><a href="test-09.html" target="_blank">chapter 09: quadraticCurveTo/bezierCurveTo二次/三次贝塞尔曲线</a></p>
+	<p><a href="test-10.html" target="_blank">chapter 10: ctx.createLinearGradient线性渐变</a></p>
+	<p><a href="test-11.html" target="_blank">chapter 11: ctx.createRadialGradient径向渐变</a></p>
+	<p><a href="test-12.html" target="_blank">chapter 12: ctx.translate/ctx.scale/ctx.rotate 位移/缩放/旋转</a></p>
+	<p><a href="test-13.html" target="_blank">chapter 13: ctx.transform 矩阵变换</a></p>
+	<p><a href="test-14.html" target="_blank">chapter 14: ctx.globalCompositeOperation图形组合</a></p>
+	<p><a href="test-15.html" target="_blank">chapter 15: ctx.shadowOffsetX/shadowOffsetY/shadowColor/shadowBlur阴影</a></p>
+	<p><a href="test-16.html" target="_blank">chapter 16: ctx.createPattern(image, type) 图像平铺</a></p>
+	<p><a href="test-17.html" target="_blank">chapter 17: ctx.clip() 画布裁剪</a></p>
+	<p><a href="test-18.html" target="_blank">chapter 18: ctx.getImageData/putImageData/createImageData 像素操作</a></p>
+	<p><a href="test-19.html" target="_blank">chapter 19: canvas事件</a></p>
+	<p><a href="test-20.html" target="_blank">chapter 20: canvas像素碰撞检测</a></p>
+	<p><a href="test-21.html" target="_blank">chapter 21: canvas 小游戏</a></p>
+	<p><a href="test-22.html" target="_blank">chapter 22: canvas 小游戏改进版（添加sprite及优化缩放）</a></p>
+	<p><a href="test-23.html" target="_blank">chapter 23: canvas碰撞检测（光线投射法）</a></p>
+	<p><a href="test-24.html" target="_blank">chapter 24: 图片翻转</a></p>
+	<p><a href="test-25.html" target="_blank">chapter 25: 像素级别碰撞检测</a></p>
+	<p><a href="test-26.html" target="_blank">chapter 26: 求解多边形重心</a></p>
+	<p><a href="test-27.html" target="_blank">chapter 27: 实现探照灯</a></p>
+	<p><a href="test-28.html" target="_blank">chapter 28: 绘制圆角矩形/虚线/箭头</a></p>
+	<p><a href="test-29.html" target="_blank">chapter 29: 绘制虚线圆角矩形/虚线圆(弧)/虚线箭头</a></p>
+	<p><a href="test-30.html" target="_blank">chapter 30: 绘制椭圆/虚线椭圆(弧)</a></p>
+	<p><a href="test-31.html" target="_blank">chapter 31: 高级loading动画</a></p>
+
 </body>
 
 </html>

@@ -9,6 +9,10 @@
     padding: 0
   }
   
+  body {
+    background: #4c4d55;
+  }
+  
   pre {
     padding: 10px 0
   }
@@ -18,7 +22,7 @@
 <body>
   <pre></pre>
   <p></p>
-  <canvas id="stage" width="400" height="400" style="border: 1px solid red; margin: 20px"></canvas>
+  <canvas id="stage" width="400" height="400" style="border: 0px solid red; margin: 20px auto; display: block"></canvas>
   <script src="raf.js"></script>
   <script src="vector2.js"></script>
   <script src="resource.js"></script>
@@ -38,72 +42,133 @@
   var ARC4 = ARC * 360;
   var DEG = 180 / Math.PI;
   var radius = 100;
-  var startTime, tickId;
+  var ended = false;
 
   // 点
   var spot = {
+    pos: 0,
     angle: 0,
-    radius: 6,
-    angleSwing: 360
+    radius: 4,
+    round: 0,
+    angleSwing: 360,
+    posSwing: radius,
+    startTime: 0,
+    visible: true,
+    angleDuration: 1200,
+    failDuration: 400,
+    angleMode: true,
+    update: function(now) {
+      if (this.visible) {
+        this.angleMode = this.round !== 2;
+        var ts = now - this.startTime;
+        var duration = this.angleMode ? this.angleDuration : this.failDuration;
+        var percent = Math.min(1, ts / duration);
+        if (this.angleMode) {
+          this.angle = this.angleSwing * percent;
+        } else {
+          this.pos = (1 - percent) * this.posSwing;
+        }
+        if (percent === 1) {
+          if (this.angleMode) {
+            this.round += 1;
+            this.angle = 0;
+          }
+          this.startTime = now;
+          this.visible = this.angleMode;
+        }
+      }
+    }
   };
-  var arcperiod = Math.round(Math.sqrt(360) + 19 / 2);
   // 弧
   var arc = {
     angle: 0,
-    size: 30,
+    size: 20,
+    round: 0,
+    startSize: 20,
     radius: radius,
     angleSwing: 360,
-    sizeSwing: 330,
-    round: 0
+    sizeSwing: 170,
+    angleDuration: 1200,
+    startTime: 0,
+    visible: true,
+    update: function(now) {
+      if (this.visible) {
+        var ts = now - this.startTime;
+        var percent = Math.min(1, ts / this.angleDuration);
+        this.angle = this.angleSwing * sinusoidalCurve(percent);
+        this.size = this.startSize + this.sizeSwing * percent;
+        if (percent === 1) {
+          this.round += 1;
+          this.startTime = now;
+          this.startSize += this.sizeSwing;
+          this.visible = this.round !== 2;
+        }
+      }
+    }
+  };
+  // clip
+  var clipped = {
+    radius: 5,
+    startRadius: 5,
+    radiusSwing: radius,
+    duration: 800,
+    startTime: 0,
+    ended: false,
+    update: function(now) {
+      var ts = now - this.startTime;
+      var percent = Math.min(1, ts / this.duration);
+      this.radius = this.startRadius + sinusoidalCurve(percent) * this.radiusSwing;
+      if (percent === 1) {
+        this.ended = true;
+      }
+    }
   };
 
   window.onload = function() {
     rendering();
-    startTime = Date.now();
-    tickId = window.requestAnimationFrame(redraw);
+    arc.startTime = spot.startTime = Date.now();
+    window.requestAnimationFrame(redraw);
   };
 
   function redraw() {
-  	ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
+    ctx.clearRect(0, 0, canvasWidth + 1, canvasHeight + 1);
     updating();
     rendering();
-    window.requestAnimationFrame(redraw);
+    if (!ended) {
+      window.requestAnimationFrame(redraw);
+    }
   }
 
   function updating() {
-  	var now = Date.now();
-  	var elasped = now - startTime;
-  	var percent = elasped / 1500;
-    if (percent >= 1) {
-    	arc.round += 1;
-    	if (arc.round % 2 === 0) {
-    		startTime = Date.now();
-    		spot.angle = 0;
-        arc.size = 30;
-      }
+    var now = Date.now();
+    spot.update(now);
+    arc.update(now);
+    if (!arc.visible && !spot.visible && !clipped.startTime) {
+      clipped.startTime = now;
     }
-    var aa = arc.angle;
-    var nspot = spot.angleSwing * percent;
-    var nangle = arc.angleSwing * easing(percent);
-    var nsize = arc.sizeSwing * percent;
-    spot.angle = nspot;
-    arc.angle = nangle;
-    arc.size = nsize;
+    if (clipped.startTime) {
+      clipped.update(now);
+    }
+    ended = !arc.visible && !spot.visible && clipped.ended;
   }
 
   function rendering() {
     drawBackground();
     drawArc();
     drawSpot();
+    drawClipped();
   }
 
   function drawBackground() {
+    if (!arc.visible && !spot.visible) {
+      return;
+    }
     var size = 56;
     var text = 'LOGO';
     ctx.save();
     ctx.strokeStyle = 'red';
     ctx.fillStyle = 'red';
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 8;
     ctx.font = 'bold ' + size + 'px Arial';
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, ARC4);
@@ -114,12 +179,39 @@
     ctx.restore();
   }
 
+  function drawClipped() {
+    if (arc.visible || spot.visible) {
+      return;
+    }
+    var size = 56;
+    var text = 'LOGO';
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 8;
+    ctx.font = 'bold ' + size + 'px Arial';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, clipped.radius, 0, ARC4);
+    ctx.closePath();
+    ctx.clip();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, ARC4);
+    ctx.closePath();
+    ctx.stroke();
+    var offset = ctx.measureText(text).width / 2;
+    ctx.fillText(text, centerX - offset, centerY + size * .4);
+    ctx.restore();
+  }
+
   function drawArc() {
+    if (!arc.visible) {
+      return;
+    }
     var arcStart = (arc.angle - 90) * ARC;
     var arcEnd = (arc.angle + arc.size - 90) * ARC;
     ctx.save();
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 12;
+    ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, arcStart, arcEnd);
     ctx.stroke();
@@ -127,9 +219,12 @@
   }
 
   function drawSpot() {
+    if (!spot.visible) {
+      return;
+    }
     var a = (spot.angle - 90) * ARC;
-    var ax = centerX + radius * Math.cos(a);
-    var ay = centerY + radius * Math.sin(a);
+    var ax = spot.angleMode ? centerX + radius * Math.cos(a) : centerX;
+    var ay = spot.angleMode ? centerY + radius * Math.sin(a) : centerY - spot.pos;
     ctx.save();
     ctx.fillStyle = 'white';
     ctx.beginPath();
@@ -139,8 +234,15 @@
     ctx.restore();
   }
 
-  function easing(k) {
-  	return 0.5 * (1 - Math.cos(Math.PI * k));
+  function sinusoidalCurve(k) {
+    return 0.5 * (1 - Math.cos(Math.PI * k));
+  }
+
+  function circularCurve(k) {
+    if ((k *= 2) < 1) {
+      return -0.5 * (Math.sqrt(1 - k * k) - 1);
+    }
+    return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
   }
   </script>
 </body>

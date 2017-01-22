@@ -5,8 +5,8 @@
 	var ops = op.toString;
 	var empty = {};
 	var xname = 'constructor';
-	var cname = 'clsname';
-	var cmeta = 'clsmeta';
+	var cname = 'typedef';
+	var cmeta = 'metadef';
 
 	function err(msg, cls) {
 		throw new Error('Sketch.declare("' + cls + '"): ' + msg);
@@ -145,7 +145,7 @@
 		name = name || caller.nom;
 
 		if (!name) {
-			// toto: throw error
+			err('can not deduce a name to call inherited()', this[cname]);
 		}
 
 		meta = this.constructor[cmeta];

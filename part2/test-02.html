@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>canvas sample-02</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  pre {
+    padding: 10px 0
+  }
+  </style>
+</head>
+
+<body>
+  <pre></pre>
+  <p></p>
+  <div id="stage" style="border: 1px solid #ccc; margin: 20px; width: 640px; height: 480px;"></div>
+  <script src="../sketch.js/Sketch.js"></script>
+  <script src="../sketch.js/util.js"></script>
+  <script src="../sketch.js/declare.js"></script>
+  <script src="../sketch.js/core.js"></script>
+  <script type="text/javascript">
+  var stage = document.getElementById('stage');
+  var layer = Sketch.Layer(stage);
+  var painter = layer.painter;
+  for (var i = 0; i < 2000; ++i) {
+    var point = Sketch.Point(Sketch.random(-320, 320), Sketch.random(-240, 240));
+    painter.addChild(point);
+  }
+  var dir = 1;
+  var zoom = layer.zoom;
+  var x = layer.center.x;
+  var y = layer.center.y;
+  var dir2 = 1;
+  var tick = setInterval(function() {
+    zoom += dir;
+    x += dir2 * 2;
+    y += dir2 * 2;
+    if (zoom > 200) {
+      dir = -1;
+      x = 0;
+      y = 0;
+      clearInterval(tick);
+      startTranslate();
+    } else if (zoom < 50) {
+      dir = 1;
+    }
+    if (x >= 10) {
+      dir2 = -1;
+    } else if (x <= -10) {
+      dir2 = 1;
+    }
+    // console.log(x)
+    // console.time('x')
+    layer.translate(dir2, dir2);
+    layer.scale(zoom);
+    layer.redraw();
+    // console.timeEnd('x')
+  }, 30);
+
+  function startTranslate() {
+    var step = 5;
+    var tick = setInterval(function() {
+      layer.translate(-step, step);
+      layer.redraw();
+      if (-layer.center.x <= layer.maxBounds.left && -layer.center.y >= layer.maxBounds.bottom) {
+        clearInterval(tick);
+      }
+    }, 30);
+  }
+  </script>
+</body>
+
+</html>

@@ -17,6 +17,10 @@
 		return prefix + '_' + ids[prefix];
 	};
 
+	Sketch.random = function(min, max) {
+		return min + Math.floor((max - min) * Math.random());
+	};
+
 	Sketch.isFunction = function(obj) {
 		return isTypeOf(obj, 'Function');
 	};
@@ -27,6 +31,10 @@
 
 	Sketch.isArray = function(obj) {
 		return isTypeOf(obj, 'Array');
+	};
+
+	Sketch.isNumber = function(obj) {
+		return isTypeOf(obj, 'Number');
 	};
 
 	Sketch.PI2 = Math.PI * 2;

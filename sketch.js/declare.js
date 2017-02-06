@@ -180,7 +180,28 @@
 			}
 			f = base && f || opf;
 		} else {
-			// not support call inherited constructor
+			if (cache.c !== caller) {
+				pos = 0;
+				base = bases[0];
+				meta = base[cmeta];
+				if (meta.ctor !== caller) {
+					while (base = bases[++pos]) {
+						meta = base.meta;
+						if (meta && meta.ctor === caller) {
+							break;
+						}
+					}
+					pos = base ? pos : -1;
+				}
+			}
+			while (base = bases[++pos]) {
+				meta = base[cmeta];
+				f = meta ? meta.ctor : base;
+				if (f) {
+					break;
+				}
+			}
+			f = base && f;
 		}
 
 		cache.p = pos;

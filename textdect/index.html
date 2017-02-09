@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8">
+  <title>从图像中提取文字</title>
+</head>
+
+<body>
+  <script type="text/javascript">
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext('2d');
+  var fontStyle = '14px Arial';
+  var fontHeight = 24;
+  var offsetX = 8;
+  var offsetY = 8;
+  var fontPadding = 2;
+  var letterBinaries = {};
+
+  function recognizeCharactor(img) {
+  	canvas.width = img.width;
+  	canvas.height = img.height;
+  	ctx.drawImage(img, 0, 0);
+  	while (true) {
+  		
+  	}
+  }
+
+  function initCharactorsMaterial() {
+  	var letters = '0123456789+=-*/';
+  	canvas.width = 200;
+  	canvas.height = fontHeight;
+  	ctx.save();
+  	ctx.font = fontStyle;
+  	ctx.textBaseline = 'top';
+  	for (var i = 0, l = letters.length; i < l; ++i) {
+  		var c = letters[i];
+  		var cw = ctx.measureText(c).width;
+  		ctx.fillStyle = '#ffffff';
+  		ctx.fillRect(0, 0, 200, fontHeight);
+  		ctx.fillStyle = '#000000';
+  		ctx.fillText(c, 0, 0);
+  		letterBinaries[c] = {
+  			width: cw,
+  			data: binaryzationImage(ctx.getImageData(0, 0, cw, fontHeight))
+  		};
+  		ctx.clearRect(0, 0, cw, fontHeight);
+  	}
+  	ctx.restore();
+  }
+
+  function binaryzationImage(imageData) {
+    var data = imageData.data;
+    for (var i = 0, l = data.length; i < l; i += 4) {
+      var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+      data[i] = data[i + 1] = data[i + 2] = gs > 128 ? 255 : 0;
+    }
+    return imageData;
+  }
+
+  function binaryzationSequence(data) {
+    var sequence = '';
+    for (var i = 0, l = data.length; i < l; i += 4) {
+      var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+      sequence += gs > 128 ? 1 : 0;
+    }
+    return sequence;
+  }
+  </script>
+</body>
+
+</html>

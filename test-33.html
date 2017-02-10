@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8">
+  <title>canvas test-33 - 基于图像灰度化与二值化进行简单图像识别</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  body {
+    background: #4c4d55;
+    color: white;
+  }
+  
+  pre {
+    padding: 10px 0;
+    text-align: center
+  }
+  
+  .main {
+    margin: 0 auto;
+    text-align: center;
+  }
+  
+  .main-inner {
+    display: inline-block;
+    overflow: hidden;
+    clear: both;
+  }
+  
+  #imgloader {
+    float: left;
+    width: 300px;
+    height: 200px;
+    border: 1px solid #fff;
+    border-radius: 3px;
+    background: #ddd;
+    display: -webkit-box;
+    -webkit-box-pack: center;
+    -webkit-box-align: center;
+    color: #666;
+    font-size: 14px;
+    position: relative;
+    -webkit-transition: .5s opacity ease;
+    margin: 20px 0;
+  }
+  
+  #imgloader.active {
+    border: 1px dashed #FFF;
+    border-radius: 5px;
+    background-color: #369;
+    color: #FFF;
+  }
+  
+  #imgloader img {
+    max-width: 100%;
+  }
+  
+  #imgloader span {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    display: block;
+    width: 100%;
+    margin-top: -10px;
+    text-align: center;
+  }
+  
+  #imgloader.hasimage span {
+    display: none;
+  }
+  
+  .detail {
+    float: left;
+    margin: 20px;
+    height: 200px;
+    font-size: 12px;
+    color: #ddd;
+    text-align: left;
+  }
+  
+  .detail p {
+    margin: 10px 0;
+  }
+  
+  .detail p:first-child {
+    margin-top: 3px;
+  }
+  
+  #result {
+    border-bottom: 1px solid #ddd;
+    color: #ddd;
+    font-size: 14px;
+    padding: 4px 20px;
+  }
+
+  .material {
+    margin-top: 20px;
+  }
+  .material canvas {
+    display: block;
+    margin: 0 auto;
+  }
+  </style>
+</head>
+
+<body>
+  <pre>基于图像灰度化与二值化进行简单图像识别</pre>
+  <p></p>
+  <div class="main">
+    <div class="main-inner">
+      <div id="imgloader"><span>拖拽图片到此处进行识别</span></div>
+      <div class="detail">
+        <p>二值化</p>
+        <canvas id="imgbin" width="30" height="30"></canvas>
+        <p>匹配部分</p>
+        <canvas id="imgclip" width="30" height="30"></canvas>
+        <p>识别结果</p>
+        <div id="textresult">xx</div>
+      </div>
+    </div>
+  </div>
+  <div class="material">
+    <canvas id="material" width="300" height="40"></canvas>
+  </div>
+  <script src="ocrad.js"></script>
+  <script type="text/javascript">
+  window.onload = function() {
+
+    // 图片拖拽
+    var imgloader = document.getElementById('imgloader');
+
+    imgloader.ondragover = imgloader.ondragstart = function() {
+      return false;
+    };
+
+    imgloader.ondragenter = function() {
+      var span = this.querySelector('span');
+      span.innerHTML = '松开按键将图片放入此框';
+      this.style.opacity = .8;
+      this.className = this.className.replace('hasimage', '');
+      if (this.className.indexOf('active') === -1) {
+        this.className += ' active';
+      }
+    };
+
+    imgloader.ondragleave = function() {
+      var span = this.querySelector('span');
+      span.innerHTML = '拖拽图片到此处进行识别';
+      this.style.opacity = 1;
+      if (this.className.indexOf('active') > -1) {
+        this.className = this.className.replace('active', '');
+      }
+    };
+
+    imgloader.ondrop = function(e) {
+      if (this.className.indexOf('active') > -1) {
+        this.className = this.className.replace('active', '');
+      }
+      this.style.opacity = 1;
+      var self = this;
+      var file = e.dataTransfer.files[0];
+      var reader = new FileReader();
+      reader.onload = function() {
+        loadImage(this.result, function(img) {
+          var elem = self.querySelector('img');
+          var w = img.width > 300 ? 300 : img.width;
+          var r = img.width / img.height;
+          var h = w / r;
+          self.className += ' hasimage';
+          if (elem) {
+            self.replaceChild(img, elem);
+          } else {
+            self.appendChild(img);
+          }
+          onImageReady(img);
+        });
+      };
+      reader.readAsDataURL(file);
+      return false;
+    }
+
+    function loadImage(url, cb) {
+      var img = new Image();
+      img.onload = function() {
+        cb(img);
+      };
+      img.src = url;
+    }
+
+    // 字符识别
+    var bincanvas = document.getElementById('imgbin');
+    var binctx = bincanvas.getContext('2d');
+    var clipcanvas = document.getElementById('imgclip');
+    var clipctx = clipcanvas.getContext('2d');
+    var matercanvas = document.getElementById('material');
+    var materctx = matercanvas.getContext('2d');
+    var canvas = document.createElement('canvas');
+    var textresult = document.getElementById('textresult');
+    var ctx = canvas.getContext('2d');
+    var fontStyle = 'bold 25px sans-serif';
+    var fontHeight = 20;
+    var offsetX = 8;
+    var offsetY = 5;
+    var fixup = 2;
+    var avg = 0;
+    var threshold = 90;
+    var letterBinaries = {};
+
+    function onImageReady(img) {
+      // initCharactorsMaterial();
+
+      var w = img.width;
+      var h = img.height;
+      bincanvas.width = canvas.width = w;
+      bincanvas.height = canvas.height = h;
+      ctx.drawImage(img, 0, 0);
+
+      var imageData = ctx.getImageData(0, 0, w, h);
+      var binData = binaryzationImage(imageData, threshold);
+      binctx.putImageData(binData, 0, 0);
+
+      var grayscale = binctx.getImageData(0, 0, w, h);
+      var pixel = {x: offsetX, y: h / 2};
+      var p = searchDarkPixel(pixel);
+      console.log(pixel);
+      console.log(p);
+      var bounds = searchCharactor(p);
+      console.log(bounds)
+
+      // console.time('recognize');
+      // var result = recognizeCharactor();
+      // console.timeEnd('recognize');
+      // console.log(result)
+
+      // textresult.innerHTML = result;
+    }
+
+    function searchCharactor(p) {
+      var extendPixel = 1;
+      var upPixel = 2;
+      var rightPixel = 2;
+      var downPixel = 2;
+      var leftPixel = 2;
+      var loop = 0;
+
+      while (true) {
+        var tl = {x: p.x - leftPixel, y: p.y - upPixel};
+        var tr = {x: p.x + rightPixel, y: p.y - upPixel};
+        var br = {x: p.x + rightPixel, y: p.y + downPixel};
+        var bl = {x: p.x - leftPixel, y: p.y + downPixel};
+        var ended = true;
+
+        if (++loop > 100) {
+          return null;
+        }
+
+        if (!isXLineTransparent(tl, tr)) {
+          upPixel += extendPixel;
+          ended = false;
+        }
+
+        if (!isYLineTransparent(tr, br)) {
+          rightPixel += extendPixel;
+          ended = false;
+        }
+
+        if (!isXLineTransparent(bl, br)) {
+          downPixel += extendPixel;
+          ended = false;
+        }
+
+        if (!isYLineTransparent(tl, bl)) {
+          leftPixel += extendPixel;
+          ended = false;
+        }
+
+        if (ended) {
+          return {t: tl.x, r: tr.x, b: br.y, l: bl.x};
+        }
+      }
+    }
+
+    function searchDarkPixel(p) {
+      for (var i = p.x, l = bincanvas.width; i < l; i++) {
+        var pixel = binctx.getImageData(i, p.y, 1, 1).data;
+        if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] !== 0) {
+          return {x: i, y: p.y};
+        }
+      }
+      return null;
+    }
+
+    function isXLineTransparent(p1, p2) {
+      var pixels = binctx.getImageData(p1.x, p1.y, p2.x - p1.x, 1).data;
+      for (var i = 0, l = pixels.length; i < l; i += 4) {
+        if (pixels[i] || pixels[i + 1] || pixels[i + 2] || pixels[i + 3]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function isYLineTransparent(p1, p2) {
+      var pixels = binctx.getImageData(p1.x, p1.y, 1, p2.y - p1.y).data;
+      for (var i = 0, l = pixels.length; i < l; i += 4) {
+        if (pixels[i] || pixels[i + 1] || pixels[i + 2] || pixels[i + 3]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function recognizeCharactor() {
+      var w = canvas.width;
+      var h = canvas.height;
+      var result = '';
+      for (var i = offsetX; i < w;) {
+        var imageData = ctx.getImageData(i, offsetY, i + avg, fontHeight);
+        var seq = binaryzationSequence(imageData.data, threshold);
+        var similar = 0;
+        var letter = null;
+
+        clipctx.putImageData(binaryzationImage(imageData, threshold), 0 , 0);
+
+        for (var j in letterBinaries) {
+          var obj = letterBinaries[j];
+          var rate = getSimilarity(seq, obj.data);
+          if (rate > similar) {
+            similar = rate;
+            letter = j;
+          }
+        }
+        console.log([i, letter, similar])
+        if (letter && similar >= 0.5) {
+          result += letter;
+          i += letterBinaries[letter].width + fixup;
+        } else {
+          i++;
+        }
+      }
+
+      return result;
+    }
+
+    function initCharactorsMaterial() {
+      var letters = '0123456789+=-*/';
+      var pos = offsetX;
+      materctx.fillStyle = '#ffffff';
+      materctx.fillRect(0, 0, 400, 40);
+      canvas.width = 200;
+      canvas.height = fontHeight;
+      ctx.save();
+      ctx.font = fontStyle;
+      ctx.textBaseline = 'top';
+      materctx.font = fontStyle;
+      materctx.textBaseline = 'top';
+      for (var i = 0, l = letters.length; i < l; ++i) {
+        var c = letters[i];
+        var cw = ctx.measureText(c).width;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 200, fontHeight);
+        ctx.fillStyle = '#000000';
+        ctx.fillText(c, 0, 0);
+        avg += cw;
+        letterBinaries[c] = {
+          width: cw,
+          data: binaryzationSequence(ctx.getImageData(0, 0, cw, fontHeight).data)
+        };
+        ctx.clearRect(0, 0, cw, fontHeight);
+        materctx.fillStyle = '#000000';
+        materctx.fillText(c, pos, offsetY);
+        pos += cw + fixup;
+      }
+      ctx.restore();
+      avg = avg / l;
+    }
+
+    function binaryzationImage(imageData, threshold) {
+      var data = imageData.data;
+      threshold = threshold || 128;
+      for (var i = 0, l = data.length; i < l; i += 4) {
+        var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+        data[i] = data[i + 1] = data[i + 2] = gs > threshold ? 255 : 0;
+      }
+      return imageData;
+    }
+
+    function binaryzationSequence(data, threshold) {
+      var sequence = '';
+      threshold = threshold || 128;
+      for (var i = 0, l = data.length; i < l; i += 4) {
+        var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+        sequence += gs > threshold ? 1 : 0;
+      }
+      return sequence;
+    }
+
+    function getSimilarity(seq1, seq2) {
+      var l1 = seq1.length;
+      var l2 = seq2.length;
+      var len = l1 > l2 ? l1 : l2;
+      var i = 0;
+      var found = 0;
+      while (i < l1 && i < l2) {
+        var c1 = seq1[i];
+        var c2 = seq2[i++];
+        if (c1 === c2) {
+          found++;
+        }
+      }
+      return found / len;
+    }
+  };
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>Canvas简单验证码识别</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link href="" rel="stylesheet">
+</head>
+<body>
+<img src="#" id="code" align="absmiddle"  alt="">
+<button id="recognize">识别</button>
+<p>点击图片刷新验证码</p>
+<script type="text/javascript">
+	var OCR = (function(window,document,undefined){
+		var offsetX,offsetY = 6,fontWidth,fontHeight,gap = 13,source,srcs,kus,codeId,recId;
+		function init(codeContainerId,recognizeId){
+			offsetX = 5;
+			offsetY = 6
+			fontWidth = 8;
+			fontHeight = 10;
+			gap = 13;
+			source = {};
+			srcs = ['images/p1.png','images/p2.png','images/p3.png','images/p4.png','images/p5.png','images/p6.png','images/p7.png','images/p8.png','images/p9.png','images/p10.png','images/p11.png','images/p12.png','images/p13.png','images/p14.png'];
+			kus = [["3","2","2","1"],["4","6","7","5"],["9","8","1","6"],["0","3","5","0"]];
+			codeId = codeContainerId;
+			recId = recognizeId;
+			initSource();
+			getCode();
+			addEvent();
+		}
+		function initSource(){
+			for(var i=0;i<4;i++){
+				(function(){
+					addSource(srcs[i],kus[i]);
+				})();
+			}
+		}
+		function getCode(){
+			var im = document.getElementById("code"),
+				randPic = srcs[(~~(Math.random()*srcs.length))];
+			im.src = randPic;
+		}
+		function addSource(pic,numArr){
+			var im = new Image(),
+				canvas = document.createElement("canvas"),
+				ctx = canvas.getContext("2d");
+			im.onload = function(){
+				canvas.width = this.width;
+				canvas.height = this.height;
+				ctx.drawImage(im,0,0);
+				var imgData = ctx.getImageData(0,0,80,20);
+				imgData = binaryzationImageData(imgData);
+				ctx.putImageData(imgData,0,0);
+				for(var i=1;i<=4;i++){
+					(function(i){
+						var imgData = ctx.getImageData(offsetX+gap*(i-1)+fontWidth*(i-1),offsetY,fontWidth,fontHeight);
+						!source[numArr[i-1]] && (source[numArr[i-1]] = imgData.data.join("").replace(/255/g,"1"));
+					})(i);
+				}
+			}
+			im.src = pic;
+		}
+		function binaryzationImageData(imgData){
+			for(var i=0;i<imgData.width*imgData.height;i++){
+				var r = imgData.data[i*4+0],
+					g = imgData.data[i*4+1],
+					b = imgData.data[i*4+2];
+				var gray = 0.299 * r + 0.587 * g + 0.114 * b;
+				if(gray<=130){
+					gray = 0;
+				}else{
+					gray = 255;
+				}
+				imgData.data[i*4+0] = imgData.data[i*4+1] = imgData.data[i*4+2] = gray;
+			}
+			return imgData;
+		}
+		function recognize(im){
+			var canvas = document.createElement("canvas"),
+				ctx = canvas.getContext("2d"),
+				code = '';
+			canvas.width = im.width;
+			canvas.height = im.height;
+			ctx.drawImage(im,0,0);
+			for(var i=1;i<=4;i++){
+				var imgData = ctx.getImageData(offsetX+gap*(i-1)+fontWidth*(i-1),offsetY,fontWidth,fontHeight);
+				imgData = binaryzationImageData(imgData);
+				var str = imgData.data.join("").replace(/255/g,"1");
+				for(var index in source){
+					if(compare(source[index],str)>=99){
+						code += index;
+						break;
+					}
+				}
+			}
+			alert(code);
+		}
+		function getObjectLength(o){
+			var len = 0;
+			for(var index in o){
+				if(o.hasOwnProperty(index)){
+					len ++;
+				}
+			}
+			return len;
+		}
+		function compare(x, y) {
+			var x = x.split(""),
+				y = y.split(""),
+				z = 0,
+				s = Math.max(x.length,y.length),
+				a = x.shift(),
+				b = y.shift();
+			while(a !== undefined && b !== undefined) {
+				if (a === b) {
+					z++;
+				}
+				a = x.shift();
+				b = y.shift();
+			}
+			return z/s * 100;
+		}
+		function addEvent(){
+			document.getElementById(recId).onclick = function(){
+				recognize(document.getElementById(codeId));
+			}
+			document.getElementById(codeId).onclick = function(){
+				getCode();
+			}
+		}
+		return { init : init }
+	})(window,document);
+
+	OCR.init("code","recognize");
+</script>
+</body>
+</html>

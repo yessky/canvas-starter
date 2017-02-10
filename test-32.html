@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf8">
+  <title>canvas test-32 - 图像灰度化与二值化</title>
+  <style type="text/css">
+  * {
+    margin: 0;
+    padding: 0
+  }
+  
+  body {
+    background: #4c4d55;
+    color: white
+  }
+  
+  pre {
+    padding: 10px 0;
+    text-align: center
+  }
+  </style>
+</head>
+
+<body>
+  <pre>图像灰度化与二值化</pre>
+  <p></p>
+  <canvas id="stage1" style="border: 0px solid red; margin: 20px auto; display: block"></canvas>
+  <canvas id="stage2" style="border: 0px solid red; margin: 20px auto; display: block"></canvas>
+  <script src="resource.js"></script>
+  <script type="text/javascript">
+  var canvas1 = document.getElementById('stage1');
+  var ctx1 = canvas1.getContext('2d');
+  var canvas2 = document.getElementById('stage2');
+  var ctx2 = canvas2.getContext('2d');
+
+  loader.load({
+    img: 'images/scence.jpg'
+  }, function(sources) {
+    var w = sources.img.width;
+    var h = sources.img.height;
+    var r = w / h;
+    h = 300;
+    w = h * r;
+    canvas1.width = canvas2.width = w;
+    canvas1.height = canvas2.height = h;
+    ctx1.drawImage(sources.img, 0, 0);
+    var imageData = ctx1.getImageData(0, 0, w, h);
+    var pixels = imageData.data;
+    var seq = '';
+    for (var i = 0, l = pixels.length; i < l; i += 4) {
+      var idx1 = i;
+      var idx2 = i + 1;
+      var idx3 = i + 2;
+      var grayscale = pixels[idx1] * .299 + pixels[idx2] * .587 + pixels[idx3] * .114;
+      pixels[idx1] = pixels[idx2] = pixels[idx3] = grayscale > 128 ? 255 : 0;
+      seq += grayscale > 128 ? 1 : 0;
+    }
+    ctx2.putImageData(imageData, 0, 0);
+    console.log(seq);
+  });
+  </script>
+</body>
+
+</html>

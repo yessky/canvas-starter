@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>识别相似图片</title>
+  <style>
+  html {
+    background: #F0F0F0;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  img {
+    display: block;
+  }
+  
+  .panel {
+    width: 300px;
+    height: 200px;
+    border: 1px solid #CCC;
+    background: #F5F5F5;
+    float: left;
+    display: -webkit-box;
+    -webkit-box-pack: center;
+    -webkit-box-align: center;
+    color: #CCC;
+    font-size: 14px;
+    position: relative;
+    -webkit-transition: .5s opacity ease;
+    margin: 20px;
+    margin-right: 0;
+  }
+  
+  .panel img {
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  .on {
+    border: 1px dashed #FFF;
+    background-color: #369;
+    color: #FFF;
+  }
+  
+  .similar {
+    float: left;
+    margin: 20px;
+    border: 1px solid #4896D5;
+    background: #D3EEFA;
+    color: #4896D5;
+    font-size: 14px;
+    border-radius: 5px;
+    padding: 10px;
+    opacity: .9;
+    display: none;
+  }
+  </style>
+  <script>
+  window.onload = function() {
+    var panel1 = document.querySelectorAll('.panel')[0];
+    var panel2 = document.querySelectorAll('.panel')[1];
+    panel1.ondragover = panel2.ondragover = function(ev) {
+      return false;
+    };
+
+    panel1.ondragenter = panel2.ondragenter = function(ev) {
+      var span = this.querySelectorAll('span')[0];
+      span.innerHTML = '松开按键将图片放入此框';
+      this.style.opacity = .8;
+
+      var re = /on/;
+      if (!re.test(this.className)) this.className += ' on';
+    };
+
+    panel1.ondragleave = panel2.ondragleave = function(ev) {
+      var span = this.querySelectorAll('span')[0];
+      span.innerHTML = '请拖拽原始图片至此框内';
+      this.style.opacity = 1;
+
+      var re = /on/;
+      if (re.test(this.className)) this.className = this.className.replace(re, '');
+    };
+
+    panel1.ondrop = panel2.ondrop = function(ev) {
+      var re = /on/;
+      if (re.test(this.className)) this.className = this.className.replace(re, '');
+      this.style.opacity = 1;
+
+      var self = this,
+        file = ev.dataTransfer.files[0],
+        reader = new FileReader();
+
+      reader.onload = function(ev) {
+        var img = self.querySelectorAll('img')[0];
+
+        if (!img) {
+          img = new Image();
+          self.appendChild(img);
+        }
+
+        img.onload = function() {
+          self.style.width = this.width + 'px';
+          self.style.height = this.height + 'px';
+
+          var img1 = panel1.querySelectorAll('img')[0];
+          var img2 = panel2.querySelectorAll('img')[0];
+
+          if (img1 && img2) {
+            document.querySelectorAll('.similar')[0].innerHTML = '相似度：' + searchImage(img1, img2) + '%';
+            document.querySelectorAll('.similar')[0].style.display = 'block';
+          }
+        };
+
+        img.src = this.result;
+      };
+
+      reader.readAsDataURL(file);
+      return false;
+    };
+  };
+
+  function searchImage(image1, image2, tmplw, tmplh) {
+    var canvas = document.createElement('canvas'),
+      ctx = canvas.getContext('2d'),
+      sw = image1.width, // 原图宽度
+      sh = image1.height, // 原图高度
+      tw = tmplw || 8, // 模板宽度
+      th = tmplh || 8; // 模板高度
+
+    canvas.width = tw;
+    canvas.height = th;
+
+    ctx.drawImage(image1, 0, 0, sw, sh, 0, 0, tw, th);
+
+    var pixels = ctx.getImageData(0, 0, tw, th);
+
+    pixels = toGrayBinary(pixels, true, null, true);
+
+    var canvas2 = document.createElement('canvas');
+    var ctx2 = canvas2.getContext('2d');
+
+    canvas2.width = tw;
+    canvas2.height = th;
+
+    ctx2.drawImage(image2, 0, 0, image2.width, image2.height, 0, 0, tw, th);
+
+    var pixels2 = ctx2.getImageData(0, 0, tw, th);
+
+    pixels2 = toGrayBinary(pixels2, true, null, true);
+    var similar = 0;
+    for (var i = 0, len = tw * th; i < len; i++) {
+      if (pixels[i] == pixels2[i]) similar++;
+    }
+
+    similar = (similar / (tw * th)) * 100;
+
+    return similar;
+  }
+  // 像素数据，是否二值化（bool），二值化闵值（0-255），是否返回二值化后序列（bool）
+  function toGrayBinary(pixels, binary, value, sn) {
+    var r, g, b, g, avg = 0,
+      len = pixels.data.length,
+      s = '';
+    for (var i = 0; i < len; i += 4) {
+      avg += (.299 * pixels.data[i] + .587 * pixels.data[i + 1] + .114 * pixels.data[i + 2]);
+    }
+
+    avg /= (len / 4);
+
+    for (var i = 0; i < len; i += 4) {
+      r = .299 * pixels.data[i], g = .587 * pixels.data[i + 1], b = .114 * pixels.data[i + 2];
+      if (binary) {
+        if ((r + g + b) >= (value || avg)) {
+          g = 255;
+          if (sn) s += '1';
+        } else {
+          g = 0;
+          if (sn) s += '0';
+        }
+        g = (r + g + b) > (value || avg) ? 255 : 0;
+      } else {
+        g = r + g + b;
+      }
+
+      pixels.data[i] = g, pixels.data[i + 1] = g, pixels.data[i + 2] = g;
+    }
+
+    if (sn) return s;
+    else return pixels;
+  }
+  </script>
+</head>
+
+<body>
+  <div class="panel"><span>请拖拽图片一至此框内</span></div>
+  <div class="panel"><span>请拖拽图片二至此框内</span></div>
+  <div class="similar"></div>
+</body>
+
+</html>

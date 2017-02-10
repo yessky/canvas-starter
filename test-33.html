@@ -96,10 +96,11 @@
     font-size: 14px;
     padding: 4px 20px;
   }
-
+  
   .material {
     margin-top: 20px;
   }
+  
   .material canvas {
     display: block;
     margin: 0 auto;
@@ -119,7 +120,7 @@
         <p>匹配部分</p>
         <canvas id="imgclip" width="30" height="30"></canvas>
         <p>识别结果</p>
-        <div id="textresult">xx</div>
+        <div id="textresult">--</div>
       </div>
     </div>
   </div>
@@ -201,17 +202,24 @@
     var canvas = document.createElement('canvas');
     var textresult = document.getElementById('textresult');
     var ctx = canvas.getContext('2d');
-    var fontStyle = 'bold 25px sans-serif';
+    var fontStyle = 'bold 20px FangSong';
     var fontHeight = 20;
     var offsetX = 8;
     var offsetY = 5;
-    var fixup = 2;
+    var fixup = 3;
     var avg = 0;
-    var threshold = 90;
+    var threshold = 100;
     var letterBinaries = {};
 
+    window.binctx = binctx;
+    window.isXLineTransparent = isXLineTransparent;
+    window.isYLineTransparent = isYLineTransparent;
+    window.binaryzationImage = binaryzationImage;
+    window.binaryzationSequence = binaryzationSequence;
+    window.getSimilarity = getSimilarity;
+
     function onImageReady(img) {
-      // initCharactorsMaterial();
+      initCharactorsMaterial();
 
       var w = img.width;
       var h = img.height;
@@ -224,12 +232,42 @@
       binctx.putImageData(binData, 0, 0);
 
       var grayscale = binctx.getImageData(0, 0, w, h);
-      var pixel = {x: offsetX, y: h / 2};
-      var p = searchDarkPixel(pixel);
-      console.log(pixel);
-      console.log(p);
-      var bounds = searchCharactor(p);
-      console.log(bounds)
+      var dark = searchDarkPixel({
+        x: offsetX,
+        y: h / 2
+      });
+      var vectors = [];
+      while (dark) {
+      	var vector = searchCharactor(dark);
+      	if (vector) {
+      		var prevector = vectors[vectors.length - 1];
+      		console.log(['bound merge', prevector && (vector[0] - prevector[2]) <= fixup])
+      		if (prevector && (vector[0] - prevector[2]) <= fixup) {
+      			prevector[2] = vector[2];
+      			prevector[0] = Math.min(prevector[0], vector[0]);
+      			prevector[3] = Math.max(prevector[3], vector[3]);
+      			vector = vectors[vectors.length - 1] = prevector;
+      		} else {
+      			vectors.push(vector);
+      		}
+      		dark = searchDarkPixel({x: vector[2] + 1, y: h / 2});
+      	} else {
+      		console.log('break as no symbol found');
+      		break;
+      	}
+      }
+
+      console.log(vectors);
+      window.vectors = vectors;
+      window.letterBinaries = letterBinaries;
+
+      binctx.strokeStyle = 'red'
+      for (var i = 0, l = vectors.length; i < l; ++i) {
+      	var vector = vectors[i];
+      	// binctx.beginPath();
+      	// console.log(vector)
+      	// binctx.strokeRect(vector[0], vector[1], vector[2] - vector[0], vector[3] - vector[1]);
+      }
 
       // console.time('recognize');
       // var result = recognizeCharactor();
@@ -245,41 +283,75 @@
       var rightPixel = 2;
       var downPixel = 2;
       var leftPixel = 2;
-      var loop = 0;
+      var size = 0;
+      var upEnd = false;
+      var rightEnd = false;
+      var downEnd = false;
+      var leftEnd = false;
 
-      while (true) {
-        var tl = {x: p.x - leftPixel, y: p.y - upPixel};
-        var tr = {x: p.x + rightPixel, y: p.y - upPixel};
-        var br = {x: p.x + rightPixel, y: p.y + downPixel};
-        var bl = {x: p.x - leftPixel, y: p.y + downPixel};
-        var ended = true;
+      while (++size < 15) {
+        var tl = {
+          x: p.x - leftPixel,
+          y: p.y - upPixel
+        };
+        var tr = {
+          x: p.x + rightPixel,
+          y: p.y - upPixel
+        };
+        var br = {
+          x: p.x + rightPixel,
+          y: p.y + downPixel
+        };
+        var bl = {
+          x: p.x - leftPixel,
+          y: p.y + downPixel
+        };
 
-        if (++loop > 100) {
-          return null;
+        if (!upEnd) {
+          if (!isXLineTransparent(tl, tr)) {
+            upPixel += extendPixel;
+            ended = false;
+          } else {
+            upEnd = true;
+            console.log('top reach bounds')
+          }
         }
 
-        if (!isXLineTransparent(tl, tr)) {
-          upPixel += extendPixel;
-          ended = false;
+        if (!rightEnd) {
+          if (!isYLineTransparent(tr, br)) {
+            rightPixel += extendPixel;
+            ended = false;
+          } else {
+            rightEnd = true;
+            console.log('right reach bounds')
+          }
         }
 
-        if (!isYLineTransparent(tr, br)) {
-          rightPixel += extendPixel;
-          ended = false;
+        if (!downEnd) {
+          if (!isXLineTransparent(bl, br)) {
+            downPixel += extendPixel;
+            ended = false;
+          } else {
+          	downEnd = true;
+            console.log('bottom reach bounds')
+          }
         }
 
-        if (!isXLineTransparent(bl, br)) {
-          downPixel += extendPixel;
-          ended = false;
+        if (!leftEnd) {
+          if (!isYLineTransparent(tl, bl)) {
+            leftPixel += extendPixel;
+            ended = false;
+          } else {
+          	leftEnd = true;
+            console.log('left reach bounds')
+          }
         }
 
-        if (!isYLineTransparent(tl, bl)) {
-          leftPixel += extendPixel;
-          ended = false;
-        }
-
-        if (ended) {
-          return {t: tl.x, r: tr.x, b: br.y, l: bl.x};
+        if (upEnd && rightEnd && downEnd && leftEnd) {
+        	console.log([
+        		p.x, p.y, tl.x, tl.y, br.x, br.y
+        	])
+          return [tl.x, tl.y, br.x, br.y];
         }
       }
     }
@@ -288,7 +360,10 @@
       for (var i = p.x, l = bincanvas.width; i < l; i++) {
         var pixel = binctx.getImageData(i, p.y, 1, 1).data;
         if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] !== 0) {
-          return {x: i, y: p.y};
+          return {
+            x: i,
+            y: p.y
+          };
         }
       }
       return null;
@@ -297,7 +372,7 @@
     function isXLineTransparent(p1, p2) {
       var pixels = binctx.getImageData(p1.x, p1.y, p2.x - p1.x, 1).data;
       for (var i = 0, l = pixels.length; i < l; i += 4) {
-        if (pixels[i] || pixels[i + 1] || pixels[i + 2] || pixels[i + 3]) {
+        if (pixels[i] === 0 && pixels[i + 1] === 0 && pixels[i + 2] === 0 && pixels[i + 3] !== 0) {
           return false;
         }
       }
@@ -307,7 +382,7 @@
     function isYLineTransparent(p1, p2) {
       var pixels = binctx.getImageData(p1.x, p1.y, 1, p2.y - p1.y).data;
       for (var i = 0, l = pixels.length; i < l; i += 4) {
-        if (pixels[i] || pixels[i + 1] || pixels[i + 2] || pixels[i + 3]) {
+        if (pixels[i] === 0 && pixels[i + 1] === 0 && pixels[i + 2] === 0 && pixels[i + 3] !== 0) {
           return false;
         }
       }
@@ -324,7 +399,7 @@
         var similar = 0;
         var letter = null;
 
-        clipctx.putImageData(binaryzationImage(imageData, threshold), 0 , 0);
+        clipctx.putImageData(binaryzationImage(imageData, threshold), 0, 0);
 
         for (var j in letterBinaries) {
           var obj = letterBinaries[j];

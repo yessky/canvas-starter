@@ -238,35 +238,29 @@
       });
       var vectors = [];
       while (dark) {
-      	var vector = searchCharactor(dark);
-      	if (vector) {
-      		var prevector = vectors[vectors.length - 1];
-      		console.log(['bound merge', prevector && (vector[0] - prevector[2]) <= fixup])
-      		if (prevector && (vector[0] - prevector[2]) <= fixup) {
-      			prevector[2] = vector[2];
-      			prevector[0] = Math.min(prevector[0], vector[0]);
-      			prevector[3] = Math.max(prevector[3], vector[3]);
-      			vector = vectors[vectors.length - 1] = prevector;
-      		} else {
-      			vectors.push(vector);
-      		}
-      		dark = searchDarkPixel({x: vector[2] + 1, y: h / 2});
-      	} else {
-      		console.log('break as no symbol found');
-      		break;
-      	}
+        var vector = searchCharactor(dark);
+        if (vector) {
+          vectors.push(vector);
+          dark = searchDarkPixel({
+            x: vector[2] + 1,
+            y: h / 2
+          });
+        } else {
+          console.log('break as no symbol found');
+          break;
+        }
       }
 
       console.log(vectors);
+      console.log('==============================')
       window.vectors = vectors;
       window.letterBinaries = letterBinaries;
 
       binctx.strokeStyle = 'red'
       for (var i = 0, l = vectors.length; i < l; ++i) {
-      	var vector = vectors[i];
-      	// binctx.beginPath();
-      	// console.log(vector)
-      	// binctx.strokeRect(vector[0], vector[1], vector[2] - vector[0], vector[3] - vector[1]);
+        var vector = vectors[i];
+        binctx.beginPath();
+        binctx.strokeRect(vector[0], vector[1], vector[2] - vector[0], vector[3] - vector[1]);
       }
 
       // console.time('recognize');
@@ -283,13 +277,9 @@
       var rightPixel = 2;
       var downPixel = 2;
       var leftPixel = 2;
-      var size = 0;
-      var upEnd = false;
-      var rightEnd = false;
-      var downEnd = false;
-      var leftEnd = false;
+      var wide = 0;
 
-      while (++size < 15) {
+      while (++wide < 20) {
         var tl = {
           x: p.x - leftPixel,
           y: p.y - upPixel
@@ -306,66 +296,53 @@
           x: p.x - leftPixel,
           y: p.y + downPixel
         };
+        var ended = true;
 
-        if (!upEnd) {
-          if (!isXLineTransparent(tl, tr)) {
-            upPixel += extendPixel;
-            ended = false;
-          } else {
-            upEnd = true;
-            console.log('top reach bounds')
-          }
+        if (!isXLineTransparent(tl, tr)) {
+          upPixel += extendPixel;
+          ended = false;
         }
 
-        if (!rightEnd) {
-          if (!isYLineTransparent(tr, br)) {
-            rightPixel += extendPixel;
-            ended = false;
-          } else {
-            rightEnd = true;
-            console.log('right reach bounds')
-          }
+        if (!isYLineTransparent(tr, br)) {
+          rightPixel += extendPixel;
+          ended = false;
         }
 
-        if (!downEnd) {
-          if (!isXLineTransparent(bl, br)) {
-            downPixel += extendPixel;
-            ended = false;
-          } else {
-          	downEnd = true;
-            console.log('bottom reach bounds')
-          }
+        if (!isXLineTransparent(bl, br)) {
+          downPixel += extendPixel;
+          ended = false;
         }
 
-        if (!leftEnd) {
-          if (!isYLineTransparent(tl, bl)) {
-            leftPixel += extendPixel;
-            ended = false;
-          } else {
-          	leftEnd = true;
-            console.log('left reach bounds')
-          }
+        if (!isYLineTransparent(tl, bl)) {
+          leftPixel += extendPixel;
+          ended = false;
         }
 
-        if (upEnd && rightEnd && downEnd && leftEnd) {
-        	console.log([
-        		p.x, p.y, tl.x, tl.y, br.x, br.y
-        	])
+        if (ended) {
+          console.log(['found bounds'])
           return [tl.x, tl.y, br.x, br.y];
         }
       }
     }
 
     function searchDarkPixel(p) {
-      for (var i = p.x, l = bincanvas.width; i < l; i++) {
-        var pixel = binctx.getImageData(i, p.y, 1, 1).data;
-        if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] !== 0) {
-          return {
-            x: i,
-            y: p.y
-          };
-        }
-      }
+    	var oy = p.y;
+    	var y = oy;
+    	var deep = 0;
+    	var dir = 1;
+    	while (++deep < 20) {
+    		for (var i = p.x, l = bincanvas.width; i < l; i++) {
+	        var pixel = binctx.getImageData(i, y, 1, 1).data;
+	        if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] !== 0) {
+	          return {
+	            x: i,
+	            y: p.y
+	          };
+	        }
+	      }
+	      dir = deep > 9 ? -1 : 1;
+	      y += dir;
+    	}
       return null;
     }
 

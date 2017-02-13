@@ -124,7 +124,7 @@
       </div>
     </div>
   </div>
-  <div class="material">
+  <div class="material" style="display:none">
     <canvas id="material" width="300" height="40"></canvas>
   </div>
   <script src="ocrad.js"></script>
@@ -202,7 +202,7 @@
     var canvas = document.createElement('canvas');
     var textresult = document.getElementById('textresult');
     var ctx = canvas.getContext('2d');
-    var fontStyle = 'bold 20px FangSong';
+    var fontStyle = '18px Arial';
     var fontHeight = 20;
     var offsetX = 8;
     var offsetY = 5;
@@ -212,8 +212,7 @@
     var letterBinaries = {};
 
     window.binctx = binctx;
-    window.isXLineTransparent = isXLineTransparent;
-    window.isYLineTransparent = isYLineTransparent;
+    window.isLineTransparent = isLineTransparent;
     window.binaryzationImage = binaryzationImage;
     window.binaryzationSequence = binaryzationSequence;
     window.getSimilarity = getSimilarity;
@@ -227,26 +226,36 @@
       bincanvas.height = canvas.height = h;
       ctx.drawImage(img, 0, 0);
 
+      // step1: binaryzation
       var imageData = ctx.getImageData(0, 0, w, h);
-      var binData = binaryzationImage(imageData, threshold);
-      binctx.putImageData(binData, 0, 0);
+      var grayImageData = binaryzationImage(imageData, threshold);
+      binctx.putImageData(grayImageData, 0, 0);
 
-      var grayscale = binctx.getImageData(0, 0, w, h);
-      var dark = searchDarkPixel({
-        x: offsetX,
-        y: h / 2
-      });
+      // step2: search pixel bounds
+      var bounds = searchForegroundBounds(grayImageData);
+      console.log(['pixel bounds', bounds]);
+
+      // step3: split charactor
+      var x1 = bounds.left;
+      var x2 = bounds.right;
+      var y1 = bounds.top;
+      var y2 = bounds.bottom;
+      var cy = (y1 + y2) / 2;
+      var x = x1;
+      var y = cy;
+      var spread = 5;
       var vectors = [];
-      while (dark) {
-        var vector = searchCharactor(dark);
+      while (x <= x2) {
+        var vector = searchCharactor(grayImageData, {
+          top: y1,
+          right: x + spread,
+          bottom: y2,
+          left: x
+        });
         if (vector) {
           vectors.push(vector);
-          dark = searchDarkPixel({
-            x: vector[2] + 1,
-            y: h / 2
-          });
+          x = vector.right + 1;
         } else {
-          console.log('break as no symbol found');
           break;
         }
       }
@@ -256,128 +265,128 @@
       window.vectors = vectors;
       window.letterBinaries = letterBinaries;
 
-      binctx.strokeStyle = 'red'
-      for (var i = 0, l = vectors.length; i < l; ++i) {
-        var vector = vectors[i];
-        binctx.beginPath();
-        binctx.strokeRect(vector[0], vector[1], vector[2] - vector[0], vector[3] - vector[1]);
-      }
+      // binctx.strokeStyle = 'red';
+      // for (var i = 0, l = vectors.length; i < l; ++i) {
+      //   var vector = vectors[i];
+      //   binctx.beginPath();
+      //   binctx.strokeRect(vector.left, vector.top, vector.right - vector.left + 1, vector.bottom - vector.top + 1);
+      // }
 
-      // console.time('recognize');
-      // var result = recognizeCharactor();
-      // console.timeEnd('recognize');
-      // console.log(result)
+      console.time('recognize');
+      var result = recognizeCharactor(ctx, vectors);
+      console.timeEnd('recognize');
+      console.log(result)
 
       // textresult.innerHTML = result;
     }
 
-    function searchCharactor(p) {
-      var extendPixel = 1;
-      var upPixel = 2;
-      var rightPixel = 2;
-      var downPixel = 2;
-      var leftPixel = 2;
-      var wide = 0;
+    function searchCharactor(imageData, rect) {
+      var spread = 1;
+      var x1 = rect.left;
+      var y1 = rect.top;
+      var x2 = rect.right;
+      var y2 = rect.bottom;
 
-      while (++wide < 20) {
-        var tl = {
-          x: p.x - leftPixel,
-          y: p.y - upPixel
-        };
-        var tr = {
-          x: p.x + rightPixel,
-          y: p.y - upPixel
-        };
-        var br = {
-          x: p.x + rightPixel,
-          y: p.y + downPixel
-        };
-        var bl = {
-          x: p.x - leftPixel,
-          y: p.y + downPixel
-        };
+      console.log(['searchCharactor >>>>', rect])
+
+      while (y1 < y2) {
         var ended = true;
 
-        if (!isXLineTransparent(tl, tr)) {
-          upPixel += extendPixel;
+        // left side
+        if (isLineTransparent(imageData, x1, y1, x1, y2)) {
+          // fix left-side, move to right
+          x1 += spread;
+          x2 += spread;
           ended = false;
         }
 
-        if (!isYLineTransparent(tr, br)) {
-          rightPixel += extendPixel;
+        // right side
+        var prevIsEmpty = isLineTransparent(imageData, x2 - spread, y1, x2 - spread, y2);
+        var nextIsEmpty = isLineTransparent(imageData, x2 + spread, y1, x2 + spread, y2);
+        var curIsEmpty = isLineTransparent(imageData, x2, y1, x2, y2);
+        if ((!prevIsEmpty && !nextIsEmpty)) {
+          x2 += spread;
+          ended = false;
+        } else if (prevIsEmpty && (x2 - x1) > 5) {
+          x2 -= spread;
           ended = false;
         }
 
-        if (!isXLineTransparent(bl, br)) {
-          downPixel += extendPixel;
+        // top side
+        if (isLineTransparent(imageData, x1, y1, x2, y1)) {
+          // fix top-side, move to bottom
+          y1 += spread;
           ended = false;
         }
 
-        if (!isYLineTransparent(tl, bl)) {
-          leftPixel += extendPixel;
+        // bottom side
+        if (isLineTransparent(imageData, x1, y2, x2, y2)) {
+          y2 -= spread;
           ended = false;
         }
 
         if (ended) {
-          console.log(['found bounds'])
-          return [tl.x, tl.y, br.x, br.y];
+          return {
+            left: x1,
+            top: y1,
+            right: x2,
+            bottom: y2
+          };
         }
       }
     }
 
-    function searchDarkPixel(p) {
-    	var oy = p.y;
-    	var y = oy;
-    	var deep = 0;
-    	var dir = 1;
-    	while (++deep < 20) {
-    		for (var i = p.x, l = bincanvas.width; i < l; i++) {
-	        var pixel = binctx.getImageData(i, y, 1, 1).data;
-	        if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] !== 0) {
-	          return {
-	            x: i,
-	            y: p.y
-	          };
-	        }
-	      }
-	      dir = deep > 9 ? -1 : 1;
-	      y += dir;
-    	}
-      return null;
+    function searchForegroundBounds(imageData) {
+      var w = imageData.width;
+      var h = imageData.height;
+      var data = imageData.data;
+      var top = h;
+      var bottom = 0;
+      var left = w;
+      var right = 0;
+      for (var i = 0; i < h; ++i) {
+        for (var j = 0; j < w; ++j) {
+          var k = (i * w + j) * 4;
+          if (data[k] === 0 && data[k + 3] !== 0) {
+            left = j < left ? j : left;
+            top = i < top ? i : top;
+            right = j > right ? j : right;
+            bottom = i > bottom ? i : bottom;
+          }
+        }
+      }
+      return {
+        top: top,
+        right: right,
+        bottom: bottom,
+        left: left
+      };
     }
 
-    function isXLineTransparent(p1, p2) {
-      var pixels = binctx.getImageData(p1.x, p1.y, p2.x - p1.x, 1).data;
-      for (var i = 0, l = pixels.length; i < l; i += 4) {
-        if (pixels[i] === 0 && pixels[i + 1] === 0 && pixels[i + 2] === 0 && pixels[i + 3] !== 0) {
-          return false;
+    function isLineTransparent(imageData, x1, y1, x2, y2) {
+      var w = imageData.width;
+      var pixels = imageData.data;
+      for (var i = y1, s1 = y2 + 1; i < s1; ++i) {
+        for (var j = x1, s2 = x2 + 1; j < s2; ++j) {
+          var k = (i * w + j) * 4;
+          if (pixels[k] === 0 && pixels[k + 3] !== 0) {
+            return false;
+          }
         }
       }
       return true;
     }
 
-    function isYLineTransparent(p1, p2) {
-      var pixels = binctx.getImageData(p1.x, p1.y, 1, p2.y - p1.y).data;
-      for (var i = 0, l = pixels.length; i < l; i += 4) {
-        if (pixels[i] === 0 && pixels[i + 1] === 0 && pixels[i + 2] === 0 && pixels[i + 3] !== 0) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    function recognizeCharactor() {
+    function recognizeCharactor(ctx, vectors) {
       var w = canvas.width;
       var h = canvas.height;
       var result = '';
-      for (var i = offsetX; i < w;) {
-        var imageData = ctx.getImageData(i, offsetY, i + avg, fontHeight);
-        var seq = binaryzationSequence(imageData.data, threshold);
+      for (var i = 0, l = vectors.length; i < l; ++i) {
+        var vector = vectors[i];
+        var bmp = ctx.getImageData(vector.left, vector.top, vector.right - vector.left, vector.bottom - vector.top);
+        var seq = binaryzationSequence(bmp.data, threshold);
         var similar = 0;
         var letter = null;
-
-        clipctx.putImageData(binaryzationImage(imageData, threshold), 0, 0);
-
         for (var j in letterBinaries) {
           var obj = letterBinaries[j];
           var rate = getSimilarity(seq, obj.data);
@@ -386,12 +395,9 @@
             letter = j;
           }
         }
-        console.log([i, letter, similar])
+        console.log([i, letter, similar, bmp.width, bmp.height])
         if (letter && similar >= 0.5) {
           result += letter;
-          i += letterBinaries[letter].width + fixup;
-        } else {
-          i++;
         }
       }
 
@@ -435,7 +441,8 @@
       var data = imageData.data;
       threshold = threshold || 128;
       for (var i = 0, l = data.length; i < l; i += 4) {
-        var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+        // var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+        var gs = (data[i] + data[i + 1] + data[i + 2]) / 3;
         data[i] = data[i + 1] = data[i + 2] = gs > threshold ? 255 : 0;
       }
       return imageData;
@@ -445,7 +452,8 @@
       var sequence = '';
       threshold = threshold || 128;
       for (var i = 0, l = data.length; i < l; i += 4) {
-        var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+        // var gs = data[i] * .299 + data[i + 1] * .587 + data[i + 2] * .114;
+        var gs = (data[i] + data[i + 1] + data[i + 2]) / 3;
         sequence += gs > threshold ? 1 : 0;
       }
       return sequence;
